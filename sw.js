@@ -1,6 +1,4 @@
-const CACHE_NAME = 'ads-v1';
-// In production, we only cache the shell and external assets.
-// Vite bundles the JS/CSS, so caching specific .tsx files is incorrect as they don't exist in the build.
+const CACHE_NAME = 'ads-v2'; // Changed to v2 to force browser to clear old cache
 const urlsToCache = [
   '/',
   '/index.html',
@@ -12,6 +10,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Force new service worker to take over immediately
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {

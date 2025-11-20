@@ -259,3 +259,6 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
       </main>
     </div>
   );
+};
+
+export default AdminDashboardPage;

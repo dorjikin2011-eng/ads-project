@@ -1,0 +1,16 @@
+{
+"short_name": "ADS",
+"name": "Online Asset Declaration System",
+"description": "A redesigned, modern web application for public officials to declare their assets, promoting transparency and trust.",
+"icons": [
+{
+"src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+"sizes": "512x512",
+"type": "image/png"
+}
+],
+"start_url": ".",
+"display": "standalone",
+"theme_color": "#f59e0b",
+"background_color": "#ffffff"
+}

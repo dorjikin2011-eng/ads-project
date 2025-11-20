@@ -1,50 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#f59e0b" />
-<title>Asset Declaration System</title>
-<link rel="manifest" href="/manifest.json" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-theme: {
-extend: {
-colors: {
-'primary': '#f59e0b', // Muted Gold (Amber 500)
-'primary-dark': '#d97706', // Darker Gold (Amber 600)
-'primary-darker': '#b45309', // Darkest Gold (Amber 700)
-'secondary': '#ffffff', // Crisp White
-'accent': '#f59e0b', // Muted Gold (Amber 500)
-'success': '#16a34a',
-'warning': '#f97316',
-'text-main': '#1f2937', // Dark Charcoal (Gray 800)
-'text-secondary': '#4b5563', // Lighter Charcoal (Gray 600)
-},
-fontFamily: {
-sans: ['Inter', 'sans-serif'],
-},
-}
-}
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f59e0b" />
+    <title>Asset Declaration System</title>
+    <link rel="manifest" href="/manifest.json" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#f59e0b', // Muted Gold (Amber 500)
+              'primary-dark': '#d97706', // Darker Gold (Amber 600)
+              'primary-darker': '#b45309', // Darkest Gold (Amber 700)
+              'secondary': '#ffffff', // Crisp White
+              'accent': '#f59e0b', // Muted Gold (Amber 500)
+              'success': '#16a34a',
+              'warning': '#f97316',
+              'text-main': '#1f2937', // Dark Charcoal (Gray 800)
+              'text-secondary': '#4b5563', // Lighter Charcoal (Gray 600)
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+  }
 }
 </script>
-<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
 <body class="bg-secondary antialiased">
 <div id="root"></div>
 <script type="module" src="/index.tsx"></script>
 <script>
-if ('serviceWorker' in navigator) {
-window.addEventListener('load', () => {
-navigator.serviceWorker.register('/sw.js').then(registration => {
-console.log('ServiceWorker registration successful with scope: ', registration.scope);
-}, err => {
-console.log('ServiceWorker registration failed: ', err);
-});
-});
-}
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      }, err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>

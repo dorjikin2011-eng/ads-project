@@ -15,11 +15,9 @@ interface Asset {
   type: string;
   description: string;
   value: string;
-  // New detailed fields
   dateOfAcquisition: string;
   acquiredFrom: string;
   sourceOfFunding: string;
-  // Type-specific fields
   location?: string;
   plotNo?: string;
   make?: string;
@@ -27,7 +25,6 @@ interface Asset {
   registrationNo?: string;
   bankName?: string;
   accountNo?: string;
-  // Documents
   documents: DocumentFile[];
 }
 
@@ -74,6 +71,9 @@ interface PostEmployment {
 }
 
 type FormErrors = { [key: string]: { [key: string]: string } };
+
+// Helper for IDs
+const generateId = () => Math.random().toString(36).substring(2, 15);
 
 // --- Reusable Components ---
 const FormInput = ({ label, id, error, ...props }: any) => (
@@ -331,7 +331,7 @@ const FileNewPage = () => {
 
     // --- Generic Handlers ---
     const createItemHandler = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, newItem: T) => () => {
-        setter(prev => [...prev, { ...newItem, id: crypto.randomUUID(), documents: [] }]);
+        setter(prev => [...prev, { ...newItem, id: generateId(), documents: [] }]);
     };
     const createRemoveHandler = <T extends {id: string}>(setter: React.Dispatch<React.SetStateAction<T[]>>) => (id: string) => {
         setter(prev => prev.filter(item => item.id !== id));
@@ -342,7 +342,7 @@ const FileNewPage = () => {
     const createFileUploadHandler = <T extends {id: string, documents: DocumentFile[]}>(setter: React.Dispatch<React.SetStateAction<T[]>>) => 
         (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files).map(file => Object.assign(file, { id: crypto.randomUUID() }));
+            const newFiles = Array.from(e.target.files).map(file => Object.assign(file, { id: generateId() }));
             setter(prev => prev.map(item => 
                 item.id === id ? { ...item, documents: [...item.documents, ...newFiles] } : item
             ));

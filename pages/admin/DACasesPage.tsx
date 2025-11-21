@@ -38,8 +38,7 @@ status: 'Flagged'
 const DACasesPage = () => {
 const [selectedCase, setSelectedCase] = useState<typeof daCases[0] | null>(null);
 const [isReportModalOpen, setReportModalOpen] = useState(false);
-code
-Code
+
 const handleGenerateReport = () => {
     setReportModalOpen(true);
 };

@@ -28,8 +28,6 @@ userRole: UserRole;
 const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole }) => {
 const [officials, setOfficials] = useState<Official[]>(initialOfficials);
 const [searchQuery, setSearchQuery] = useState('');
-code
-Code
 // Modal States
 const [isAddModalOpen, setAddModalOpen] = useState(false);
 const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);

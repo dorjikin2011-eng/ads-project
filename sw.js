@@ -1,51 +1,25 @@
-const CACHE_NAME = 'ads-v13-fix';
-// Only cache critical external assets and the entry point.
-// Do NOT cache .tsx files or index.html aggressively.
-const urlsToCache = [
-  '/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://rsms.me/inter/inter.css',
-  'https://picsum.photos/100',
-  'https://www.acc.org.bt/wp-content/uploads/2021/08/ACC-Location.png',
-];
+// SELF-DESTRUCT SERVICE WORKER
+// This ensures no old files are served from cache.
 
-self.addEventListener('install', event => {
-  self.skipWaiting(); // Activate immediately
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
-  );
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', event => {
-  // Network First strategy for HTML to avoid getting stuck with bad versions
-  if (event.request.headers.get('accept').includes('text/html')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
-  } else {
-    event.respondWith(
-      caches.match(event.request).then(response => {
-        return response || fetch(event.request);
-      })
-    );
-  }
-});
-
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
+self.addEventListener('activate', (event) => {
+  // Unregister this worker immediately after activation
+  self.registration.unregister()
+    .then(() => {
+      return self.clients.matchAll();
     })
-  );
-  return self.clients.claim();
+    .then((clients) => {
+      clients.forEach((client) => {
+        // Force refresh the page to get network content
+        client.navigate(client.url);
+      });
+    });
+});
+
+self.addEventListener('fetch', (event) => {
+  // Pass everything to network, no caching
+  event.respondWith(fetch(event.request));
 });

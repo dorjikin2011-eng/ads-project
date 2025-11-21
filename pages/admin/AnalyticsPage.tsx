@@ -25,8 +25,6 @@ const insights = [
 // --- Components ---
 const TrendChart = ({ data, metrics }: { data: any[], metrics: { key: string, color: string, label: string }[] }) => {
 const maxVal = Math.max(...data.map(d => Math.max(...metrics.map(m => d[m.key])))) * 1.1;
-code
-Code
 return (
     <div className="h-80 flex items-end space-x-4 sm:space-x-8 border-b border-gray-200 pb-2 px-4 mt-8">
         {data.map((item) => (
@@ -57,8 +55,7 @@ return (
 const AdminAnalyticsPage = () => {
 const [timeRange, setTimeRange] = useState<'5years' | '10years'>('5years');
 const [activeParam, setActiveParam] = useState<'networth' | 'composition' | 'compliance'>('networth');
-code
-Code
+
 const currentData = historicalData[timeRange];
 
 // Define chart configuration based on active parameter

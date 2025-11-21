@@ -4,8 +4,7 @@ return (
 <div>
 <h1 className="text-3xl font-bold text-text-main mb-2">Make a Payment</h1>
 <p className="text-text-secondary mb-8">Settle any outstanding penalties related to your declarations.</p>
-code
-Code
+
 <div className="bg-white rounded-lg shadow-md p-8 max-w-2xl mx-auto">
             <form>
                 <div className="space-y-6">

@@ -54,8 +54,6 @@ const [generatedReports, setGeneratedReports] = useState([
 { id: 101, title: 'DA High Risk List - Q4 2023', type: 'PDF', date: '2024-02-15', size: '1.2 MB', author: 'System' },
 { id: 102, title: 'Penalty Collection Summary - Jan 2024', type: 'Excel', date: '2024-02-01', size: '0.5 MB', author: 'System' },
 ]);
-code
-Code
 const handleGenerate = (templateTitle: string) => {
     const newReport = {
         id: Date.now(),

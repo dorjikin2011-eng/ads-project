@@ -8,6 +8,8 @@ import ClipboardCheckIcon from './icons/ClipboardCheckIcon';
 import DashboardIcon from './icons/DashboardIcon';
 import ScaleIcon from './icons/ScaleIcon';
 import UserGroupIcon from './icons/UserGroupIcon';
+import BanknotesIcon from './icons/BanknotesIcon';
+import ShareIcon from './icons/ShareIcon';
 import { UserRole } from '../types';
 
 interface AdminHeaderProps {
@@ -69,7 +71,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                            <NavLink icon={<UserGroupIcon />} label="Declarants" page="users" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<ClipboardCheckIcon />} label="Verification" page="verification" activePage={activePage} setActivePage={setActivePage} />
                            {userRole === 'admin' && (
-                               <NavLink icon={<ScaleIcon />} label="DA Cases" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
+                               <>
+                                   <NavLink icon={<ScaleIcon />} label="DA Cases" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
+                                   <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
+                                   <NavLink icon={<ShareIcon />} label="Info Sharing" page="info-sharing" activePage={activePage} setActivePage={setActivePage} />
+                               </>
                            )}
                            <NavLink icon={<ChartBarIcon />} label="Analytics" page="analytics" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Reports" page="reports" activePage={activePage} setActivePage={setActivePage} />

@@ -6,6 +6,8 @@ import AdminAnalyticsPage from './admin/AnalyticsPage';
 import AdminReportsPage from './admin/ReportsPage';
 import DACasesPage from './admin/DACasesPage';
 import UserManagementPage from './admin/UserManagementPage';
+import PaymentConsolePage from './admin/PaymentConsolePage';
+import InfoSharingPage from './admin/InfoSharingPage';
 import { Declaration, DeclarationStatus, UserRole } from '../types';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import SearchIcon from '../components/icons/SearchIcon';
@@ -243,6 +245,8 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
       case 'users': return <UserManagementPage userRole={userRole} />;
       case 'verification': return <AdminVerificationPage userRole={userRole} preSelectedId={selectedSubmissionId} />;
       case 'da-cases': return <DACasesPage />;
+      case 'payments': return <PaymentConsolePage />;
+      case 'info-sharing': return <InfoSharingPage />;
       case 'analytics': return <AdminAnalyticsPage />;
       case 'reports': return <AdminReportsPage userRole={userRole} />;
       default: return <OverviewContent onViewDetails={handleViewDetails} userRole={userRole} />;

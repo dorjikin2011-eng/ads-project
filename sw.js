@@ -1,49 +1,20 @@
-const CACHE_NAME = 'ads-v2'; // Changed to v2 to force browser to clear old cache
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://rsms.me/inter/inter.css',
-  'https://picsum.photos/100',
-  'https://www.acc.org.bt/wp-content/uploads/2021/08/ACC-Location.png',
-];
+// SELF-DESTRUCT SERVICE WORKER
+// This replaces the old worker and ensures no caching happens.
 
-self.addEventListener('install', event => {
-  self.skipWaiting(); // Force new service worker to take over immediately
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
+self.addEventListener('install', (e) => {
+  self.skipWaiting(); // Activate immediately
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      }
-    )
-  );
+self.addEventListener('activate', (e) => {
+  // Tell the active service worker to take control of the page immediately.
+  self.registration.unregister()
+    .then(() => self.clients.matchAll())
+    .then((clients) => {
+      clients.forEach((client) => client.navigate(client.url)); // Force reload
+    });
 });
 
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
+self.addEventListener('fetch', (e) => {
+  // Do not cache anything. Pass through to network.
+  e.respondWith(fetch(e.request));
 });

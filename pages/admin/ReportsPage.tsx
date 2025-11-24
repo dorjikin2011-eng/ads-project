@@ -65,7 +65,11 @@ interface AdminReportsPageProps {
 }
 
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ userRole }) => {
-    const [activeTab, setActiveTab] = useState<'system' | 'compliance' | 'atr'>('system');
+    // FIX: Initialize activeTab based on role to prevent accessing undefined 'system' report for Agency Admins
+    const [activeTab, setActiveTab] = useState<'system' | 'compliance' | 'atr'>(
+        userRole === 'agency_admin' ? 'compliance' : 'system'
+    );
+
     const [generatedReports, setGeneratedReports] = useState([
         { id: 101, title: 'DA High Risk List - Q4 2023', type: 'PDF', date: '2024-02-15', size: '1.2 MB', author: 'System' },
         { id: 102, title: 'Penalty Collection Summary - Jan 2024', type: 'Excel', date: '2024-02-01', size: '0.5 MB', author: 'System' },
@@ -201,7 +205,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ userRole }) => {
                                     {(reports[activeTab as 'compliance' | 'atr'].status === 'Draft' || reports[activeTab as 'compliance' | 'atr'].status.includes('Correction')) && (
                                         <button 
                                             onClick={() => handleReportAction(activeTab as 'compliance' | 'atr', 'submit_hoa')}
-                                            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+                                            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-medium shadow-sm"
                                         >
                                             Submit to HoA
                                         </button>
@@ -210,7 +214,7 @@ const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ userRole }) => {
                                     {reports[activeTab as 'compliance' | 'atr'].status === 'Approved by HoA' && (
                                         <button 
                                             onClick={() => handleReportAction(activeTab as 'compliance' | 'atr', 'submit_acc')}
-                                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium shadow-sm"
                                         >
                                             Submit to ACC
                                         </button>

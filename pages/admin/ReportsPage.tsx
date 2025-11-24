@@ -65,7 +65,7 @@ interface AdminReportsPageProps {
 }
 
 const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ userRole }) => {
-    // FIX: Initialize activeTab based on role to prevent accessing undefined 'system' report for Agency Admins
+    // Initialize activeTab based on role to avoid runtime errors
     const [activeTab, setActiveTab] = useState<'system' | 'compliance' | 'atr'>(
         userRole === 'agency_admin' ? 'compliance' : 'system'
     );

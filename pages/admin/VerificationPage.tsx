@@ -7,10 +7,51 @@ import CreditCardIcon from '../../components/icons/CreditCardIcon';
 import DocumentIcon from '../../components/icons/DocumentIcon';
 import { UserRole } from '../../types';
 
-// --- Data ---
+// --- Expanded Mock Data to support Viewing AD ---
 const mockDeclarantsData: Record<string, any> = {
-    '11223344': { id: '11223344', name: 'H.E. Lyonpo Dorji', schedule: 'Schedule I', designation: 'Minister', type: 'Annual', risk: 'Low', status: 'Pending Review', assets: [], documents: [{name: 'Tax.pdf', type: 'Tax'}] },
-    '55667788': { id: '55667788', name: 'Mr. Tashi Wangmo', schedule: 'Schedule II', designation: 'Officer', type: 'Vacation of Office', risk: 'Medium', status: 'Pending Review', assets: [], documents: [{name: 'Clearance.pdf', type: 'Admin'}] }
+    '11223344': { 
+        id: '11223344', 
+        name: 'H.E. Lyonpo Dorji', 
+        schedule: 'Schedule I', 
+        designation: 'Minister', 
+        type: 'Annual', 
+        risk: 'Low', 
+        status: 'Pending Review', 
+        // Asset Details
+        immovable: [
+            { type: 'Land', thram: 'TH-123', location: 'Thimphu', size: '20 Decimals', cost: '2,000,000' },
+            { type: 'Building', thram: 'PU-998', location: 'Punakha', size: '2 Storey', cost: '5,500,000' }
+        ],
+        movable: [
+            { type: 'Vehicle', model: 'Toyota Prado', reg: 'BP-1-A1234', cost: '3,500,000' }
+        ],
+        income: [
+            { source: 'Salary', amount: '1,500,000' },
+            { source: 'Rental', amount: '200,000' }
+        ],
+        liabilities: [
+            { type: 'Housing Loan', bank: 'BoB', amount: '3,000,000', balance: '1,200,000' }
+        ],
+        documents: [{name: 'Tax_Clearance.pdf', type: 'Tax'}, {name: 'Bank_Statement.pdf', type: 'Finance'}] 
+    },
+    '55667788': { 
+        id: '55667788', 
+        name: 'Mr. Tashi Wangmo', 
+        schedule: 'Schedule II', 
+        designation: 'Procurement Officer', 
+        type: 'Vacation of Office', 
+        risk: 'Medium', 
+        status: 'Pending Review', 
+        immovable: [],
+        movable: [
+            { type: 'Vehicle', model: 'Kia Seltos', reg: 'BP-2-B4444', cost: '1,200,000' }
+        ],
+        income: [
+            { source: 'Salary', amount: '450,000' }
+        ],
+        liabilities: [],
+        documents: [{name: 'No_Due_Certificate.pdf', type: 'Admin'}, {name: 'Clearance_Form.pdf', type: 'HR'}] 
+    }
 };
 
 // --- Components ---
@@ -25,7 +66,12 @@ interface AdminVerificationPageProps { userRole: UserRole; preSelectedId?: strin
 
 const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole, preSelectedId }) => {
     const [selectedId, setSelectedId] = useState<string | null>(preSelectedId || null);
+    const [activeTab, setActiveTab] = useState<'Checklist' | 'Assets' | 'Financials' | 'Documents'>('Checklist');
+    
+    // Verification State
     const [checks, setChecks] = useState({ timely: false, complete: false, accurate: false });
+    
+    // Modals
     const [isCertModalOpen, setCertModalOpen] = useState(false);
     const [isPenaltyModalOpen, setPenaltyModalOpen] = useState(false);
     const [penaltyAmount, setPenaltyAmount] = useState('');
@@ -51,6 +97,79 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
         alert(`Penalty of Nu. ${penaltyAmount} imposed on ${selected?.name} for ${penaltyReason}. Added to Action Taken Report.`);
         setPenaltyModalOpen(false);
     };
+
+    // --- View Renderers ---
+    const renderAssets = () => (
+        <div className="space-y-4">
+            <h3 className="font-bold text-gray-700 border-b pb-2">Immovable Properties</h3>
+            {selected?.immovable.length > 0 ? (
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50"><tr><th className="p-2">Type</th><th className="p-2">Details</th><th className="p-2">Location</th><th className="p-2">Cost</th></tr></thead>
+                    <tbody>
+                        {selected.immovable.map((item: any, i: number) => (
+                            <tr key={i} className="border-b">
+                                <td className="p-2">{item.type}</td>
+                                <td className="p-2">{item.thram} / {item.size}</td>
+                                <td className="p-2">{item.location}</td>
+                                <td className="p-2 font-mono">Nu. {item.cost}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : <p className="text-sm text-gray-500 italic">No immovable assets declared.</p>}
+
+            <h3 className="font-bold text-gray-700 border-b pb-2 mt-6">Movable Assets</h3>
+            {selected?.movable.length > 0 ? (
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50"><tr><th className="p-2">Type</th><th className="p-2">Model</th><th className="p-2">Registration</th><th className="p-2">Cost</th></tr></thead>
+                    <tbody>
+                        {selected.movable.map((item: any, i: number) => (
+                            <tr key={i} className="border-b">
+                                <td className="p-2">{item.type}</td>
+                                <td className="p-2">{item.model}</td>
+                                <td className="p-2">{item.reg}</td>
+                                <td className="p-2 font-mono">Nu. {item.cost}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : <p className="text-sm text-gray-500 italic">No movable assets declared.</p>}
+        </div>
+    );
+
+    const renderFinancials = () => (
+        <div className="space-y-4">
+            <h3 className="font-bold text-gray-700 border-b pb-2">Income Sources</h3>
+             <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50"><tr><th className="p-2">Source</th><th className="p-2">Amount (Annual Gross)</th></tr></thead>
+                <tbody>
+                    {selected?.income.map((item: any, i: number) => (
+                        <tr key={i} className="border-b">
+                            <td className="p-2">{item.source}</td>
+                            <td className="p-2 font-mono text-green-700">Nu. {item.amount}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            <h3 className="font-bold text-gray-700 border-b pb-2 mt-6">Liabilities</h3>
+            {selected?.liabilities.length > 0 ? (
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50"><tr><th className="p-2">Type</th><th className="p-2">Lender</th><th className="p-2">Sanctioned</th><th className="p-2">Outstanding</th></tr></thead>
+                    <tbody>
+                        {selected.liabilities.map((item: any, i: number) => (
+                            <tr key={i} className="border-b">
+                                <td className="p-2">{item.type}</td>
+                                <td className="p-2">{item.bank}</td>
+                                <td className="p-2 font-mono">Nu. {item.amount}</td>
+                                <td className="p-2 font-mono text-red-700">Nu. {item.balance}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : <p className="text-sm text-gray-500 italic">No liabilities declared.</p>}
+        </div>
+    );
 
     return (
         <div className="flex flex-col h-full">
@@ -90,7 +209,7 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
 
             {/* Sidebar List */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
-                <div className="lg:col-span-4 bg-white rounded-lg shadow p-4">
+                <div className="lg:col-span-4 bg-white rounded-lg shadow p-4 h-fit">
                     <h2 className="font-bold text-gray-700 mb-4">Pending Verification</h2>
                     {Object.values(mockDeclarantsData).map((d:any) => (
                         <button key={d.id} onClick={() => setSelectedId(d.id)} className={`w-full text-left p-3 rounded mb-2 ${selectedId === d.id ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}`}>
@@ -103,50 +222,74 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                 {/* Main Panel */}
                 <div className="lg:col-span-8">
                     {selected ? (
-                        <div className="bg-white rounded-lg shadow p-6">
-                            <div className="flex justify-between items-start border-b pb-4 mb-6">
-                                <div>
-                                    <h1 className="text-2xl font-bold">{selected.name}</h1>
-                                    <p className="text-gray-500 text-sm">{selected.type} • {selected.schedule}</p>
+                        <div className="bg-white rounded-lg shadow min-h-[600px] flex flex-col">
+                            <div className="p-6 border-b">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h1 className="text-2xl font-bold">{selected.name}</h1>
+                                        <p className="text-gray-500 text-sm">{selected.type} • {selected.schedule}</p>
+                                    </div>
+                                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-bold">Pending Verification</span>
                                 </div>
-                                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs font-bold">Pending Verification</span>
+
+                                {/* Navigation Tabs */}
+                                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+                                    {['Checklist', 'Assets', 'Financials', 'Documents'].map(tab => (
+                                        <button 
+                                            key={tab} 
+                                            onClick={() => setActiveTab(tab as any)}
+                                            className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === tab ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <VerificationCard title="1. Timeliness Check">
-                                        <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer">
-                                            <input type="checkbox" checked={checks.timely} onChange={(e) => setChecks({...checks, timely: e.target.checked})} className="h-5 w-5 text-green-600 rounded" />
-                                            <span className="text-sm text-gray-700">Submitted within deadline?</span>
-                                        </label>
-                                    </VerificationCard>
-                                    <VerificationCard title="2. Completeness Check">
-                                        <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer">
-                                            <input type="checkbox" checked={checks.complete} onChange={(e) => setChecks({...checks, complete: e.target.checked})} className="h-5 w-5 text-green-600 rounded" />
-                                            <span className="text-sm text-gray-700">All mandatory fields filled?</span>
-                                        </label>
-                                    </VerificationCard>
-                                    <VerificationCard title="3. Accuracy Check">
-                                        <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer">
-                                            <input type="checkbox" checked={checks.accurate} onChange={(e) => setChecks({...checks, accurate: e.target.checked})} className="h-5 w-5 text-green-600 rounded" />
-                                            <span className="text-sm text-gray-700">Matches uploaded evidence?</span>
-                                        </label>
-                                    </VerificationCard>
-                                </div>
-                                <div>
+                            <div className="p-6 flex-1">
+                                {activeTab === 'Checklist' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <VerificationCard title="Verification Actions">
+                                            <div className="space-y-3">
+                                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary">
+                                                    <input type="checkbox" checked={checks.timely} onChange={(e) => setChecks({...checks, timely: e.target.checked})} className="h-5 w-5 text-green-600 rounded" />
+                                                    <span className="text-sm text-gray-700">1. Timeliness Check</span>
+                                                </label>
+                                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary">
+                                                    <input type="checkbox" checked={checks.complete} onChange={(e) => setChecks({...checks, complete: e.target.checked})} className="h-5 w-5 text-green-600 rounded" />
+                                                    <span className="text-sm text-gray-700">2. Completeness Check</span>
+                                                </label>
+                                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary">
+                                                    <input type="checkbox" checked={checks.accurate} onChange={(e) => setChecks({...checks, accurate: e.target.checked})} className="h-5 w-5 text-green-600 rounded" />
+                                                    <span className="text-sm text-gray-700">3. Accuracy Check (vs Evidence)</span>
+                                                </label>
+                                            </div>
+                                        </VerificationCard>
+                                        <VerificationCard title="Guidance">
+                                            <p className="text-sm text-gray-600">Please review the <strong>Assets</strong>, <strong>Financials</strong>, and <strong>Documents</strong> tabs before marking checks as complete.</p>
+                                        </VerificationCard>
+                                    </div>
+                                )}
+
+                                {activeTab === 'Assets' && renderAssets()}
+                                {activeTab === 'Financials' && renderFinancials()}
+                                
+                                {activeTab === 'Documents' && (
                                     <VerificationCard title="Uploaded Evidence">
                                         {selected.documents.map((doc:any, i:number) => (
-                                            <div key={i} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded text-sm border-b border-dashed border-gray-200">
-                                                <span className="flex items-center text-gray-600"><DocumentIcon className="w-4 h-4 mr-2 text-blue-500"/> {doc.name}</span>
-                                                <button className="text-blue-600 font-bold text-xs">View</button>
+                                            <div key={i} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded text-sm border-b border-dashed border-gray-200">
+                                                <span className="flex items-center text-gray-600 font-medium"><DocumentIcon className="w-5 h-5 mr-2 text-blue-500"/> {doc.name}</span>
+                                                <div className="space-x-2">
+                                                    <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">{doc.type}</span>
+                                                    <button className="text-blue-600 font-bold text-xs hover:underline">Download</button>
+                                                </div>
                                             </div>
                                         ))}
                                     </VerificationCard>
-                                </div>
+                                )}
                             </div>
 
-                            <div className="mt-8 pt-6 border-t flex justify-between items-center">
-                                {/* PENALTY BUTTON - VISIBLE FOR AGENCY ADMIN TOO */}
+                            <div className="p-6 border-t flex justify-between items-center bg-gray-50 rounded-b-lg">
                                 <button 
                                     onClick={() => setPenaltyModalOpen(true)}
                                     className="px-4 py-2 border border-red-300 text-red-600 rounded hover:bg-red-50 font-medium flex items-center"
@@ -156,7 +299,7 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                                 </button>
 
                                 <div className="flex space-x-3">
-                                    <button className="px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 font-medium">Return for Correction</button>
+                                    <button className="px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 font-medium">Return for Correction</button>
                                     <button 
                                         onClick={handleVerify} 
                                         disabled={!checks.timely || !checks.complete || !checks.accurate}

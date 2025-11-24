@@ -5,9 +5,10 @@ import Modal from '../../components/Modal';
 import SearchIcon from '../../components/icons/SearchIcon';
 import CreditCardIcon from '../../components/icons/CreditCardIcon';
 import DocumentIcon from '../../components/icons/DocumentIcon';
+import ServerIcon from '../../components/icons/ServerIcon';
 import { UserRole } from '../../types';
 
-// --- Mock Data ---
+// --- Expanded Mock Data with System (API) Comparisons ---
 const mockDeclarantsData: Record<string, any> = {
     '11223344': { 
         id: '11223344', 
@@ -17,11 +18,52 @@ const mockDeclarantsData: Record<string, any> = {
         type: 'Annual', 
         risk: 'Low', 
         status: 'Pending Review', 
-        immovable: [{ type: 'Land', thram: 'TH-123', location: 'Thimphu', size: '20 Decimals', cost: '2,000,000' }],
-        movable: [{ type: 'Vehicle', model: 'Toyota Prado', reg: 'BP-1-A1234', cost: '3,500,000' }],
-        income: [{ source: 'Salary', amount: '1,500,000' }],
-        liabilities: [],
-        documents: [{name: 'Tax_Clearance.pdf', type: 'Tax'}] 
+        
+        // Assets with API Comparison Data
+        immovable: [
+            { 
+                type: 'Land', 
+                thram: 'TH-123', 
+                location: 'Thimphu', 
+                declared: '20 Decimals', 
+                system: '20 Decimals', 
+                apiStatus: 'Match' 
+            },
+            { 
+                type: 'Building', 
+                thram: 'PU-998', 
+                location: 'Punakha', 
+                declared: '2 Storey', 
+                system: '2 Storey', 
+                apiStatus: 'Match' 
+            }
+        ],
+        movable: [
+            { 
+                type: 'Vehicle', 
+                reg: 'BP-1-A1234', 
+                model: 'Toyota Prado', 
+                declared: 'Prado', 
+                system: 'Toyota Land Cruiser Prado (2022)', 
+                apiStatus: 'Match' 
+            },
+            { 
+                type: 'Vehicle', 
+                reg: 'BP-2-B9999', 
+                model: 'Maruti Alto', 
+                declared: 'Not Declared', 
+                system: 'Registered Owner (Active)', 
+                apiStatus: 'Mismatch' // System found it, user didn't declare
+            }
+        ],
+        income: [
+            { source: 'Salary', declared: '1,500,000', system: '1,500,000', apiStatus: 'Match' },
+            { source: 'Rental', declared: '200,000', system: '200,000', apiStatus: 'Match' }
+        ],
+        liabilities: [
+            { type: 'Housing Loan', bank: 'BoB', declared: '3,000,000', system: '3,000,000', apiStatus: 'Match' }
+        ],
+        documents: [{name: 'Tax_Clearance.pdf', type: 'Tax'}, {name: 'Bank_Statement.pdf', type: 'Finance'}] 
     },
     '55667788': { 
         id: '55667788', 
@@ -32,24 +74,14 @@ const mockDeclarantsData: Record<string, any> = {
         risk: 'Medium', 
         status: 'Pending Review', 
         immovable: [],
-        movable: [{ type: 'Vehicle', model: 'Kia Seltos', reg: 'BP-2-B4444', cost: '1,200,000' }],
-        income: [{ source: 'Salary', amount: '450,000' }],
+        movable: [
+            { type: 'Vehicle', reg: 'BP-2-B4444', model: 'Kia Seltos', declared: 'Kia Seltos', system: 'Kia Seltos (2021)', apiStatus: 'Match' }
+        ],
+        income: [
+            { source: 'Salary', declared: '450,000', system: '450,000', apiStatus: 'Match' }
+        ],
         liabilities: [],
-        documents: [{name: 'No_Due_Certificate.pdf', type: 'Admin'}] 
-    },
-    '99887766': { 
-        id: '99887766', 
-        name: 'Dasho Pema', 
-        schedule: 'Schedule I', 
-        designation: 'Secretary, MoF', 
-        type: 'Annual', 
-        risk: 'High', 
-        status: 'Pending Review', 
-        immovable: [],
-        movable: [],
-        income: [],
-        liabilities: [],
-        documents: []
+        documents: [{name: 'No_Due_Certificate.pdf', type: 'Admin'}, {name: 'Clearance_Form.pdf', type: 'HR'}] 
     }
 };
 
@@ -60,6 +92,19 @@ const VerificationCard = ({ title, children }: { title: string, children: React.
         {children}
     </div>
 );
+
+const ApiMatchBadge = ({ status }: { status: 'Match' | 'Mismatch' | 'Not Found' }) => {
+    const colors = {
+        'Match': 'bg-green-100 text-green-800 border-green-200',
+        'Mismatch': 'bg-red-100 text-red-800 border-red-200',
+        'Not Found': 'bg-gray-100 text-gray-600 border-gray-200'
+    };
+    return (
+        <span className={`text-xs px-2 py-0.5 rounded font-bold border ${colors[status] || colors['Not Found']}`}>
+            {status}
+        </span>
+    );
+};
 
 interface AdminVerificationPageProps { userRole: UserRole; preSelectedId?: string | null; }
 
@@ -82,10 +127,8 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
     // Logic to filter the list based on role AND schedule toggle
     const filteredDeclarants = Object.values(mockDeclarantsData).filter((d: any) => {
         if (userRole === 'agency_admin') {
-            // Agency Admin only sees Schedule II (and usually filtered by their agency, simplifying here)
             return d.schedule === 'Schedule II';
         }
-        // ACC Admin sees all, subject to filter
         if (scheduleFilter === 'All') return true;
         return d.schedule === scheduleFilter;
     });
@@ -108,9 +151,174 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
         setPenaltyModalOpen(false);
     };
 
-    // ... (Render functions renderAssets/renderFinancials same as previous) ...
-    const renderAssets = () => ( <div className="space-y-4"> <h3 className="font-bold text-gray-700 border-b pb-2">Immovable Properties</h3> {selected?.immovable.length > 0 ? ( <table className="w-full text-sm text-left"> <thead className="bg-gray-50"><tr><th className="p-2">Type</th><th className="p-2">Details</th><th className="p-2">Location</th><th className="p-2">Cost</th></tr></thead> <tbody> {selected.immovable.map((item: any, i: number) => ( <tr key={i} className="border-b"> <td className="p-2">{item.type}</td> <td className="p-2">{item.thram} / {item.size}</td> <td className="p-2">{item.location}</td> <td className="p-2 font-mono">Nu. {item.cost}</td> </tr> ))} </tbody> </table> ) : <p className="text-sm text-gray-500 italic">No immovable assets declared.</p>} <h3 className="font-bold text-gray-700 border-b pb-2 mt-6">Movable Assets</h3> {selected?.movable.length > 0 ? ( <table className="w-full text-sm text-left"> <thead className="bg-gray-50"><tr><th className="p-2">Type</th><th className="p-2">Model</th><th className="p-2">Registration</th><th className="p-2">Cost</th></tr></thead> <tbody> {selected.movable.map((item: any, i: number) => ( <tr key={i} className="border-b"> <td className="p-2">{item.type}</td> <td className="p-2">{item.model}</td> <td className="p-2">{item.reg}</td> <td className="p-2 font-mono">Nu. {item.cost}</td> </tr> ))} </tbody> </table> ) : <p className="text-sm text-gray-500 italic">No movable assets declared.</p>} </div> );
-    const renderFinancials = () => ( <div className="space-y-4"> <h3 className="font-bold text-gray-700 border-b pb-2">Income Sources</h3> <table className="w-full text-sm text-left"> <thead className="bg-gray-50"><tr><th className="p-2">Source</th><th className="p-2">Amount (Annual Gross)</th></tr></thead> <tbody> {selected?.income.map((item: any, i: number) => ( <tr key={i} className="border-b"> <td className="p-2">{item.source}</td> <td className="p-2 font-mono text-green-700">Nu. {item.amount}</td> </tr> ))} </tbody> </table> <h3 className="font-bold text-gray-700 border-b pb-2 mt-6">Liabilities</h3> {selected?.liabilities.length > 0 ? ( <table className="w-full text-sm text-left"> <thead className="bg-gray-50"><tr><th className="p-2">Type</th><th className="p-2">Lender</th><th className="p-2">Sanctioned</th><th className="p-2">Outstanding</th></tr></thead> <tbody> {selected.liabilities.map((item: any, i: number) => ( <tr key={i} className="border-b"> <td className="p-2">{item.type}</td> <td className="p-2">{item.bank}</td> <td className="p-2 font-mono">Nu. {item.amount}</td> <td className="p-2 font-mono text-red-700">Nu. {item.balance}</td> </tr> ))} </tbody> </table> ) : <p className="text-sm text-gray-500 italic">No liabilities declared.</p>} </div> );
+    // --- Renderers with API Cross-Check ---
+    const renderAssets = () => (
+        <div className="space-y-6">
+            {/* Immovable Assets */}
+            <div className="border rounded-lg overflow-hidden">
+                <div className="bg-gray-50 p-3 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-gray-700">Immovable Properties</h3>
+                    {userRole === 'admin' && (
+                        <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                            <ServerIcon className="w-3 h-3 mr-1"/> Verified via National Land Commission API
+                        </span>
+                    )}
+                </div>
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th className="p-3">Type</th>
+                            <th className="p-3">Thram / Loc</th>
+                            <th className="p-3">Declared Value</th>
+                            {userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System Record (API)</th>}
+                            {userRole === 'admin' && <th className="p-3 text-right">Status</th>}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {selected?.immovable.map((item: any, i: number) => (
+                            <tr key={i} className="border-b last:border-0">
+                                <td className="p-3 font-medium">{item.type}</td>
+                                <td className="p-3 text-gray-500">{item.thram}, {item.location}</td>
+                                <td className="p-3">{item.declared}</td>
+                                {userRole === 'admin' && (
+                                    <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">
+                                        {item.system}
+                                    </td>
+                                )}
+                                {userRole === 'admin' && (
+                                    <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>
+                                )}
+                            </tr>
+                        ))}
+                        {selected?.immovable.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No immovable assets found.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Movable Assets */}
+            <div className="border rounded-lg overflow-hidden">
+                <div className="bg-gray-50 p-3 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-gray-700">Movable Assets</h3>
+                    {userRole === 'admin' && (
+                        <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                            <ServerIcon className="w-3 h-3 mr-1"/> Verified via RSTA API
+                        </span>
+                    )}
+                </div>
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th className="p-3">Type</th>
+                            <th className="p-3">Registration</th>
+                            <th className="p-3">Declared Model</th>
+                            {userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System Record (API)</th>}
+                            {userRole === 'admin' && <th className="p-3 text-right">Status</th>}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {selected?.movable.map((item: any, i: number) => (
+                            <tr key={i} className={`border-b last:border-0 ${item.apiStatus === 'Mismatch' ? 'bg-red-50' : ''}`}>
+                                <td className="p-3 font-medium">{item.type}</td>
+                                <td className="p-3 text-gray-500">{item.reg}</td>
+                                <td className="p-3">{item.declared}</td>
+                                {userRole === 'admin' && (
+                                    <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">
+                                        {item.system}
+                                    </td>
+                                )}
+                                {userRole === 'admin' && (
+                                    <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>
+                                )}
+                            </tr>
+                        ))}
+                         {selected?.movable.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No movable assets found.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+
+    const renderFinancials = () => (
+        <div className="space-y-6">
+             <div className="border rounded-lg overflow-hidden">
+                <div className="bg-gray-50 p-3 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-gray-700">Income & Financials</h3>
+                    {userRole === 'admin' && (
+                        <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                            <ServerIcon className="w-3 h-3 mr-1"/> Verified via FIU / RMA API
+                        </span>
+                    )}
+                </div>
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th className="p-3">Source</th>
+                            <th className="p-3">Declared Amount</th>
+                            {userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System Record (API)</th>}
+                            {userRole === 'admin' && <th className="p-3 text-right">Status</th>}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {selected?.income.map((item: any, i: number) => (
+                            <tr key={i} className="border-b last:border-0">
+                                <td className="p-3 font-medium">{item.source}</td>
+                                <td className="p-3 font-mono text-green-700">Nu. {item.declared}</td>
+                                {userRole === 'admin' && (
+                                    <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">
+                                        Nu. {item.system}
+                                    </td>
+                                )}
+                                {userRole === 'admin' && (
+                                    <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>
+                                )}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+                <div className="bg-gray-50 p-3 border-b flex justify-between items-center">
+                    <h3 className="font-bold text-gray-700">Liabilities</h3>
+                    {userRole === 'admin' && (
+                        <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                            <ServerIcon className="w-3 h-3 mr-1"/> Verified via CIB API
+                        </span>
+                    )}
+                </div>
+                {selected?.liabilities.length > 0 ? (
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                            <tr>
+                                <th className="p-3">Type</th>
+                                <th className="p-3">Lender</th>
+                                <th className="p-3">Declared Outstanding</th>
+                                {userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System Record (API)</th>}
+                                {userRole === 'admin' && <th className="p-3 text-right">Status</th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {selected.liabilities.map((item: any, i: number) => (
+                                <tr key={i} className="border-b last:border-0">
+                                    <td className="p-3 font-medium">{item.type}</td>
+                                    <td className="p-3">{item.bank}</td>
+                                    <td className="p-3 font-mono text-red-700">Nu. {item.declared}</td>
+                                    {userRole === 'admin' && (
+                                        <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">
+                                            Nu. {item.system}
+                                        </td>
+                                    )}
+                                    {userRole === 'admin' && (
+                                        <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>
+                                    )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : <p className="p-4 text-sm text-gray-500 italic">No liabilities declared.</p>}
+            </div>
+        </div>
+    );
 
     return (
         <div className="flex flex-col h-full">
@@ -136,7 +344,7 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                                             ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'
                                         }`}
                                     >
-                                        {sch}
+                                        {sch === 'Schedule I' ? 'Sch I' : sch === 'Schedule II' ? 'Sch II' : 'All'}
                                     </button>
                                 ))}
                             </div>
@@ -185,7 +393,7 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                                                 <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary"> <input type="checkbox" checked={checks.accurate} onChange={(e) => setChecks({...checks, accurate: e.target.checked})} className="h-5 w-5 text-green-600 rounded" /> <span className="text-sm text-gray-700">3. Accuracy Check (vs Evidence)</span> </label>
                                             </div>
                                         </VerificationCard>
-                                        <VerificationCard title="Guidance"> <p className="text-sm text-gray-600">Please review the <strong>Assets</strong>, <strong>Financials</strong>, and <strong>Documents</strong> tabs before marking checks as complete.</p> </VerificationCard>
+                                        <VerificationCard title="Guidance"> <p className="text-sm text-gray-600">Please review the <strong>Assets</strong>, <strong>Financials</strong>, and <strong>Documents</strong> tabs. Use the cross-check data provided from external APIs (NLCS/RSTA) to verify accuracy.</p> </VerificationCard>
                                     </div>
                                 )}
                                 {activeTab === 'Assets' && renderAssets()}

@@ -26,7 +26,6 @@ const mockDeclarations: Declaration[] = [
 
 const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => void }) => {
     // Check if latest declaration is a cleared Vacation of Office
-    // FIX: Use mockDeclarations, not mockDeclarants
     const isCleared = mockDeclarations[0].type === 'Vacation of Office' && mockDeclarations[0].status === DeclarationStatus.APPROVED;
 
     return (

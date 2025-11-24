@@ -5,465 +5,655 @@ import TrashIcon from '../components/icons/TrashIcon';
 import PaperClipIcon from '../components/icons/PaperClipIcon';
 import Modal from '../components/Modal';
 
-// --- Type Definitions ---
-interface DocumentFile extends File {
+// --- Helper ---
+const generateId = () => Math.random().toString(36).substring(2, 15);
+
+// --- Types based on PDF ---
+interface DocumentFile extends File { id: string; }
+
+// Page 2: Personal & Family
+interface PersonalInfo {
+    reason: 'Assumption of Office' | 'Annual Declaration' | 'Vacation of Office';
+    name: string;
+    cid: string;
+    dob: string;
+    sex: string;
+    maritalStatus: string;
+    permanentAddress: string; // Dzongkhag/Gewog/Village
+    employmentDetails: string; // EID, Agency, Position, Grade
+    contact: string; // Mobile/Email
+    spouseCovered: boolean;
+}
+
+interface FamilyMember {
     id: string;
+    relationship: 'Spouse' | 'Child' | 'Dependent';
+    name: string;
+    cid: string;
+    dob: string;
+    sex: string;
+    maritalStatus: string;
+    employment: string;
+    contact: string;
+    isCovered?: boolean; // For spouse
 }
 
-interface Asset {
-  id: string;
-  type: string;
-  description: string;
-  value: string;
-  dateOfAcquisition: string;
-  acquiredFrom: string;
-  sourceOfFunding: string;
-  location?: string;
-  plotNo?: string;
-  make?: string;
-  model?: string;
-  registrationNo?: string;
-  bankName?: string;
-  accountNo?: string;
-  documents: DocumentFile[];
-}
-
-interface Liability {
-  id: string;
-  type: string;
-  institution: string;
-  amount: string;
-  dateOfLiability: string;
-  purpose: string;
-  documents: DocumentFile[];
-}
-
-interface Income {
+// Page 3: Jobs
+interface AdditionalJob {
     id: string;
-    source: string;
-    amount: string;
-    date: string;
-    documents: DocumentFile[];
-}
-
-interface Expenditure {
-    id: string;
-    description: string;
-    amount: string;
-    date: string;
-    documents: DocumentFile[];
-}
-
-interface AdditionalPost {
-    id: string;
-    organisation: string;
-    position: string;
-    details: string;
+    relationship: string; // Self/Spouse/Child
+    name: string;
+    cid: string;
+    agency: string;
+    positionTitle: string;
+    incomeAmount: string;
     documents: DocumentFile[];
 }
 
 interface PostEmployment {
     id: string;
-    organisation: string;
-    details: string;
-    startDate: string;
+    relationship: string;
+    name: string;
+    cid: string;
+    newPosition: string; // Agency/Title
+    commercialActivity: string;
+    offerAccepted: 'Yes' | 'No';
     documents: DocumentFile[];
 }
 
-type FormErrors = { [key: string]: { [key: string]: string } };
+// Page 4: Immovable
+interface ImmovableAsset {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: 'Land' | 'Building' | 'Flat' | 'House';
+    thramNo: string;
+    plotNo: string;
+    size: string;
+    location: string;
+    acquisitionDate: string;
+    acquisitionMode: string; // Purchase/Inheritance/Gift
+    cost: string;
+    sourceOfFinance: string;
+    acquiredFrom: string; // Name & CID
+    registeredOwner: string; // Name & CID
+    documents: DocumentFile[];
+}
 
-// Helper for IDs
-const generateId = () => Math.random().toString(36).substring(2, 15);
+// Page 5 & 6: Movable
+interface ShareStock {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    company: string;
+    location: string;
+    numberOfShares: string;
+    transactionId: string;
+    acquisitionDate: string;
+    acquisitionMode: string;
+    cost: string;
+    sourceOfFinance: string;
+    acquiredFrom: string;
+    documents: DocumentFile[];
+}
+
+interface Vehicle {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: string; // Car/Heavy Machinery
+    make: string;
+    registrationNo: string;
+    model: string;
+    acquisitionDate: string;
+    acquisitionMode: string;
+    cost: string;
+    sourceOfFinance: string;
+    acquiredFrom: string;
+    registeredOwner: string;
+    documents: DocumentFile[];
+}
+
+// Page 6, 7, 8: Other Assets
+interface VirtualAsset {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: string; // Bitcoin/Eth
+    qty: string;
+    acquisitionDate: string;
+    cost: string;
+    sourceOfFinance: string;
+    acquiredFrom: string;
+    documents: DocumentFile[];
+}
+
+interface PersonalSaving {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: 'Bank Deposit' | 'Cash in Hand' | 'Money Lent' | 'Foreign Exchange';
+    bankName: string;
+    location: string;
+    accountNumber: string; // Type of Account & Number
+    balance: string;
+    source: string;
+    documents: DocumentFile[];
+}
+
+interface ConvertibleAsset {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: string; // Gold/Jewelry/Art
+    acquisitionDate: string;
+    acquisitionMode: string;
+    cost: string;
+    sourceOfFinance: string;
+    acquiredFrom: string;
+    documents: DocumentFile[];
+}
+
+interface CommercialActivity {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: string; // Business/IP
+    licenseNo: string;
+    location: string;
+    operationStatus: string;
+    acquisitionDate: string;
+    acquisitionMode: string;
+    cost: string;
+    sourceOfFinance: string;
+    acquiredFrom: string;
+    documents: DocumentFile[];
+}
+
+// Page 9: Income & Liability
+interface Income {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    salary: string;
+    business: string;
+    rental: string;
+    dividends: string;
+    hiringCharges: string;
+    interest: string;
+    cashCrop: string;
+    tada: string;
+    others: string;
+    documents: DocumentFile[];
+}
+
+interface Liability {
+    id: string;
+    ownerRelationship: string;
+    ownerName: string;
+    ownerCid: string;
+    type: 'Bank Loan' | 'Private Borrowing';
+    sanctionedAmount: string;
+    actualReceived: string;
+    lenderDetails: string; // Bank Name or Individual Name/CID
+    borrowingDate: string;
+    documents: DocumentFile[];
+}
+
+// Page 10 & 11: Expenditure
+interface EducationalExpense {
+    id: string;
+    relationship: string;
+    name: string;
+    amount: string;
+    institution: string; // School/College
+    courseLevel: string;
+    documents: DocumentFile[];
+}
+
+interface OtherExpense {
+    id: string;
+    category: 'Rental' | 'Insurance' | 'Loan Repayment' | 'Mandatory Deduction (PF/GIS/TDS)' | 'Travel' | 'Vacation' | 'Donation' | 'Medical' | 'Rituals' | 'Other';
+    details: string;
+    amount: string;
+    documents: DocumentFile[];
+}
 
 // --- Reusable Components ---
-const FormInput = ({ label, id, error, ...props }: any) => (
-    <div>
-        <label htmlFor={id} className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
-        <input id={id} {...props} className={`mt-1 w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-accent focus:border-transparent transition ${error ? 'border-red-500' : 'border-gray-300'}`} />
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+
+const SectionHeader = ({ title, subtitle }: { title: string, subtitle?: string }) => (
+    <div className="mb-6 border-b pb-2">
+        <h2 className="text-xl font-bold text-primary-dark">{title}</h2>
+        {subtitle && <p className="text-sm text-text-secondary mt-1">{subtitle}</p>}
     </div>
 );
-const FormSelect = ({ label, id, error, children, ...props }: any) => (
+
+const FormInput = ({ label, id, ...props }: any) => (
     <div>
-        <label htmlFor={id} className="block text-sm font-medium text-text-secondary mb-1">{label}</label>
-        <select id={id} {...props} className={`mt-1 w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-accent focus:border-transparent transition ${error ? 'border-red-500' : 'border-gray-300'}`}>
+        <label htmlFor={id} className="block text-xs font-semibold text-text-secondary mb-1 uppercase">{label}</label>
+        <input id={id} {...props} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-transparent" />
+    </div>
+);
+
+const FormSelect = ({ label, id, children, ...props }: any) => (
+    <div>
+        <label htmlFor={id} className="block text-xs font-semibold text-text-secondary mb-1 uppercase">{label}</label>
+        <select id={id} {...props} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-white">
             {children}
         </select>
-         {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
 );
 
 const FileUpload = ({ documents, onFileChange, onFileRemove }: { documents: DocumentFile[], onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void, onFileRemove: (fileId: string) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     return (
-        <div className="md:col-span-12 mt-2">
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center space-x-2 text-xs font-medium text-accent hover:text-primary">
-                <PaperClipIcon />
-                <span>Attach Supporting Documents</span>
-            </button>
-            <input type="file" multiple ref={fileInputRef} onChange={onFileChange} className="hidden" />
-            <div className="mt-2 space-y-1">
+        <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+            <div className="flex flex-wrap gap-2 mb-2">
                 {documents.map(file => (
-                    <div key={file.id} className="flex items-center justify-between text-xs bg-gray-100 p-1.5 rounded">
-                        <span className="text-text-secondary">{file.name}</span>
-                        <button type="button" onClick={() => onFileRemove(file.id)} className="text-red-500 hover:text-red-700">
-                           <TrashIcon className="w-4 h-4" />
-                        </button>
-                    </div>
+                    <span key={file.id} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700">
+                        {file.name}
+                        <button type="button" onClick={() => onFileRemove(file.id)} className="ml-1 text-blue-400 hover:text-blue-600"><TrashIcon className="w-3 h-3" /></button>
+                    </span>
                 ))}
             </div>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center text-xs font-medium text-accent hover:text-primary">
+                <PaperClipIcon className="w-4 h-4 mr-1" /> Attach Evidence
+            </button>
+            <input type="file" multiple ref={fileInputRef} onChange={onFileChange} className="hidden" />
         </div>
     );
 };
 
-
-// --- Step Components ---
-
-const InstructionsStep = () => (
-    <div>
-        <h2 className="text-xl font-semibold text-text-main mb-4">Instructions for Filing</h2>
-        <div className="space-y-3 text-text-secondary">
-            <p>Welcome to the Asset Declaration System. Please read the following instructions carefully before proceeding.</p>
-            <ul className="list-disc list-inside space-y-2 pl-4">
-                <li>Ensure all information provided is accurate and complete to the best of your knowledge.</li>
-                <li>You must declare all assets and liabilities for yourself, your spouse, and your dependent children.</li>
-                <li>Values should be reported in Bhutanese Ngultrum (Nu.).</li>
-                <li>Upload supporting documents where necessary (e.g., sale deeds, loan agreements).</li>
-                <li>Refer to the 'Resources' page for detailed guides and legal acts if you have any questions.</li>
-            </ul>
-            <p className="font-semibold text-text-main pt-2">Filing false or incomplete information is an offense and may lead to penalties.</p>
+// --- Asset Item Wrapper (Card style for array items) ---
+const ItemCard = ({ title, onRemove, children }: { title: string, onRemove: () => void, children: React.ReactNode }) => (
+    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 relative">
+        <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+            <h4 className="text-sm font-bold text-gray-700">{title}</h4>
+            <button onClick={onRemove} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"><TrashIcon className="w-4 h-4" /></button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {children}
         </div>
     </div>
 );
 
-const PersonalInfoStep = () => (
-    <div>
-        <h2 className="text-xl font-semibold text-text-main mb-4">Confirm Personal Information</h2>
-        <p className="text-text-secondary mb-6">This information is pre-filled from your profile. Please ensure it is correct before proceeding.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-lg border">
-            <div>
-                <label className="block text-sm font-medium text-text-secondary">Full Name</label>
-                <p className="mt-1 text-text-main font-medium">Kinley Wangchuk</p>
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-text-secondary">Official ID</label>
-                <p className="mt-1 text-text-main font-medium">12345</p>
-            </div>
-        </div>
-    </div>
-);
-
-const AssetsStep = ({ data, onAdd, onRemove, onChange, onFileChange, onFileRemove, errors }: any) => {
-    const renderAssetFields = (asset: Asset) => {
-        switch (asset.type) {
-            case 'Land':
-                return <>
-                    <FormInput label="Location" value={asset.location} onChange={(e: any) => onChange(asset.id, 'location', e.target.value)} placeholder="e.g., Thimphu" />
-                    <FormInput label="Plot No." value={asset.plotNo} onChange={(e: any) => onChange(asset.id, 'plotNo', e.target.value)} placeholder="e.g., TH-1-1234" />
-                </>;
-            case 'Vehicle':
-                return <>
-                    <FormInput label="Make" value={asset.make} onChange={(e: any) => onChange(asset.id, 'make', e.target.value)} placeholder="e.g., Toyota" />
-                    <FormInput label="Model" value={asset.model} onChange={(e: any) => onChange(asset.id, 'model', e.target.value)} placeholder="e.g., Hilux" />
-                    <FormInput label="Registration No." value={asset.registrationNo} onChange={(e: any) => onChange(asset.id, 'registrationNo', e.target.value)} placeholder="e.g., BP-1-A1234" />
-                </>;
-            case 'Bank Account':
-                 return <>
-                    <FormInput label="Bank Name" value={asset.bankName} onChange={(e: any) => onChange(asset.id, 'bankName', e.target.value)} placeholder="e.g., Bank of Bhutan" />
-                    <FormInput label="Account No." value={asset.accountNo} onChange={(e: any) => onChange(asset.id, 'accountNo', e.target.value)} placeholder="e.g., 1020304050" />
-                </>;
-            default:
-                return null;
-        }
-    };
-    
-    return (
-    <div>
-        <h2 className="text-xl font-semibold text-text-main mb-4">Declare Your Assets</h2>
-        <p className="text-text-secondary mb-6">List all assets owned by you, your spouse, and dependent children. This includes land, buildings, vehicles, cash, bank deposits, shares, etc.</p>
-        <div className="space-y-4">
-            {data.map((asset: Asset, index: number) => (
-                <div key={asset.id} className="p-4 bg-gray-50 rounded-md border relative">
-                    <button onClick={() => onRemove(asset.id)} className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-100 rounded-full transition">
-                        <TrashIcon className="w-5 h-5"/>
-                    </button>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormSelect label="Asset Type" value={asset.type} onChange={(e: any) => onChange(asset.id, 'type', e.target.value)} error={errors?.[asset.id]?.type}>
-                            <option>Land</option><option>Building</option><option>Vehicle</option><option>Bank Account</option><option>Shares & Bonds</option><option>Other</option>
-                        </FormSelect>
-                        <FormInput label="Description" placeholder="e.g. Residential Building" value={asset.description} onChange={(e: any) => onChange(asset.id, 'description', e.target.value)} error={errors?.[asset.id]?.description}/>
-                        <FormInput label="Value (Nu.)" type="number" placeholder="500000" value={asset.value} onChange={(e: any) => onChange(asset.id, 'value', e.target.value)} error={errors?.[asset.id]?.value}/>
-                        <FormInput label="Date of Acquisition" type="date" value={asset.dateOfAcquisition} onChange={(e: any) => onChange(asset.id, 'dateOfAcquisition', e.target.value)} error={errors?.[asset.id]?.dateOfAcquisition}/>
-                        <FormInput label="Acquired From" placeholder="e.g., Inheritance, Seller Name" value={asset.acquiredFrom} onChange={(e: any) => onChange(asset.id, 'acquiredFrom', e.target.value)} error={errors?.[asset.id]?.acquiredFrom}/>
-                        <FormInput label="Source of Funding" placeholder="e.g., Personal Savings, Loan" value={asset.sourceOfFunding} onChange={(e: any) => onChange(asset.id, 'sourceOfFunding', e.target.value)} error={errors?.[asset.id]?.sourceOfFunding}/>
-                        {renderAssetFields(asset)}
-                    </div>
-                    <FileUpload documents={asset.documents} onFileChange={(e) => onFileChange(asset.id, e)} onFileRemove={(fileId) => onFileRemove(asset.id, fileId)} />
-                </div>
-            ))}
-            <button onClick={onAdd} className="flex items-center space-x-2 text-sm font-medium text-accent hover:text-primary pt-2">
-                <PlusIcon />
-                <span>Add Asset</span>
-            </button>
-        </div>
-    </div>
-    );
-};
-
-const LiabilitiesStep = ({ data, onAdd, onRemove, onChange, onFileChange, onFileRemove, errors }: any) => (
-     <div>
-        <h2 className="text-xl font-semibold text-text-main mb-4">Declare Your Liabilities</h2>
-        <p className="text-text-secondary mb-6">List all outstanding loans, mortgages, and other debts.</p>
-        <div className="space-y-4">
-            {data.map((liability: Liability) => (
-                <div key={liability.id} className="p-4 bg-gray-50 rounded-md border relative">
-                    <button onClick={() => onRemove(liability.id)} className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-100 rounded-full transition"><TrashIcon className="w-5 h-5"/></button>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormSelect label="Liability Type" value={liability.type} onChange={(e: any) => onChange(liability.id, 'type', e.target.value)} error={errors?.[liability.id]?.type}>
-                            <option>Home Loan</option><option>Vehicle Loan</option><option>Personal Loan</option><option>Credit Card Debt</option><option>Other</option>
-                        </FormSelect>
-                        <FormInput label="Lending Institution" placeholder="e.g. Bank of Bhutan" value={liability.institution} onChange={(e: any) => onChange(liability.id, 'institution', e.target.value)} error={errors?.[liability.id]?.institution}/>
-                        <FormInput label="Outstanding Amount (Nu.)" type="number" placeholder="250000" value={liability.amount} onChange={(e: any) => onChange(liability.id, 'amount', e.target.value)} error={errors?.[liability.id]?.amount}/>
-                        <FormInput label="Date of Liability" type="date" value={liability.dateOfLiability} onChange={(e: any) => onChange(liability.id, 'dateOfLiability', e.target.value)} error={errors?.[liability.id]?.dateOfLiability}/>
-                        <FormInput label="Purpose of Liability" placeholder="e.g. Home Construction" value={liability.purpose} onChange={(e: any) => onChange(liability.id, 'purpose', e.target.value)} error={errors?.[liability.id]?.purpose}/>
-                    </div>
-                     <FileUpload documents={liability.documents} onFileChange={(e) => onFileChange(liability.id, e)} onFileRemove={(fileId) => onFileRemove(liability.id, fileId)} />
-                </div>
-            ))}
-            <button onClick={onAdd} className="flex items-center space-x-2 text-sm font-medium text-accent hover:text-primary pt-2">
-                <PlusIcon /><span>Add Liability</span>
-            </button>
-        </div>
-    </div>
-);
-
-const GenericFormStep = ({ title, description, data, onAdd, onRemove, onChange, onFileChange, onFileRemove, fields, addLabel, errors }: any) => (
-    <div>
-        <h2 className="text-xl font-semibold text-text-main mb-4">{title}</h2>
-        <p className="text-text-secondary mb-6">{description}</p>
-        <div className="space-y-4">
-            {data.map((item: any) => (
-                <div key={item.id} className="p-4 bg-gray-50 rounded-md border relative">
-                    <button onClick={() => onRemove(item.id)} className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-100 rounded-full transition"><TrashIcon className="w-5 h-5"/></button>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {fields.map((field: any) => (
-                            <FormInput
-                                key={field.name}
-                                label={field.label}
-                                type={field.type || 'text'}
-                                placeholder={field.placeholder}
-                                value={item[field.name]}
-                                onChange={(e: any) => onChange(item.id, field.name, e.target.value)}
-                                error={errors?.[item.id]?.[field.name]}
-                            />
-                        ))}
-                    </div>
-                    <FileUpload documents={item.documents} onFileChange={(e) => onFileChange(item.id, e)} onFileRemove={(fileId) => onFileRemove(item.id, fileId)} />
-                </div>
-            ))}
-            <button onClick={onAdd} className="flex items-center space-x-2 text-sm font-medium text-accent hover:text-primary pt-2">
-                <PlusIcon /><span>{addLabel}</span>
-            </button>
-        </div>
-    </div>
-);
-
-const SummaryStep = ({ allData }: any) => (
-    <div>
-        <h2 className="text-xl font-semibold text-text-main mb-4">Summary & Review</h2>
-        <p className="text-text-secondary mb-6">Please review all the information carefully before proceeding to the final affidavit.</p>
-        
-        <div className="space-y-6">
-            {Object.entries(allData).map(([sectionTitle, sectionData]: any) => (
-                (sectionData.length > 0) && (
-                    <div key={sectionTitle}>
-                        <h3 className="text-lg font-semibold text-text-main border-b pb-2 mb-3 capitalize">{sectionTitle} Declared</h3>
-                        <ul className="space-y-3">
-                            {sectionData.map((item: any) => (
-                                <li key={item.id} className="p-3 bg-gray-50 rounded text-sm">
-                                    <p className="font-semibold">{item.description || item.type || item.source || item.organisation}</p>
-                                    <p className="text-text-secondary">{item.institution || `Amount: Nu. ${item.amount || item.value}`}</p>
-                                    {item.documents.length > 0 && 
-                                        <p className="text-xs text-blue-600 mt-1">
-                                            {item.documents.length} document(s) attached.
-                                        </p>
-                                    }
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )
-            ))}
-        </div>
-    </div>
-);
-
-const ConfirmationStep = () => (
-    <div className="text-center py-12">
-        <svg className="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <h2 className="text-2xl font-bold text-text-main mb-2">Declaration Submitted Successfully!</h2>
-        <p className="text-text-secondary">Your asset declaration has been submitted for review. A confirmation has been sent to your registered email.</p>
-    </div>
-);
-
-// --- Main Component ---
-const declarationSteps = [
-    "Instructions", "Personal Info", "Assets", "Liabilities", "Income", "Expenditure", 
-    "Additional Posts", "Post-Employment", "Summary & Submit", "Confirmation",
-];
+// --- MAIN COMPONENT ---
 
 const FileNewPage = () => {
-    const [currentStepIndex, setCurrentStepIndex] = useState(0);
+    const steps = [
+        "Guidelines", "Personal Info", "Family Details", "Employment", 
+        "Immovable Assets", "Movable Assets", "Other Assets", 
+        "Income & Liabilities", "Expenditure", "Affidavit"
+    ];
+    const [currentStep, setCurrentStep] = useState(0);
     const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-    
-    // Form state
-    const [assets, setAssets] = useState<Asset[]>([]);
-    const [liabilities, setLiabilities] = useState<Liability[]>([]);
-    const [incomes, setIncomes] = useState<Income[]>([]);
-    const [expenditures, setExpenditures] = useState<Expenditure[]>([]);
-    const [additionalPosts, setAdditionalPosts] = useState<AdditionalPost[]>([]);
-    const [postEmployments, setPostEmployments] = useState<PostEmployment[]>([]);
-    
-    const [errors, setErrors] = useState<FormErrors>({});
     const [isAffidavitModalOpen, setAffidavitModalOpen] = useState(false);
     const [affidavitAgreed, setAffidavitAgreed] = useState(false);
 
+    // --- DATA STATES ---
+    const [personal, setPersonal] = useState<PersonalInfo>({
+        reason: 'Annual Declaration', name: 'Kinley Wangchuk', cid: '12345', dob: '1985-06-15', sex: 'Male', 
+        maritalStatus: 'Married', permanentAddress: 'Thimphu', employmentDetails: 'Rev. Officer', contact: '17123456', spouseCovered: false
+    });
+    const [family, setFamily] = useState<FamilyMember[]>([]);
+    const [addJobs, setAddJobs] = useState<AdditionalJob[]>([]);
+    const [postJobs, setPostJobs] = useState<PostEmployment[]>([]);
+    const [immovable, setImmovable] = useState<ImmovableAsset[]>([]);
+    const [shares, setShares] = useState<ShareStock[]>([]);
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [virtual, setVirtual] = useState<VirtualAsset[]>([]);
+    const [savings, setSavings] = useState<PersonalSaving[]>([]);
+    const [convertible, setConvertible] = useState<ConvertibleAsset[]>([]);
+    const [commercial, setCommercial] = useState<CommercialActivity[]>([]);
+    const [income, setIncome] = useState<Income[]>([]);
+    const [liabilities, setLiabilities] = useState<Liability[]>([]);
+    const [eduExp, setEduExp] = useState<EducationalExpense[]>([]);
+    const [otherExp, setOtherExp] = useState<OtherExpense[]>([]);
 
-    // --- Generic Handlers ---
-    const createItemHandler = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, newItem: T) => () => {
-        setter(prev => [...prev, { ...newItem, id: generateId(), documents: [] }]);
+    // --- HELPERS ---
+    // Generate options for "Owner/Relationship" dropdowns based on Family Members added in Step 2
+    const getRelationOptions = () => (
+        <>
+            <option value="Self">Self ({personal.name})</option>
+            {family.map(f => <option key={f.id} value={f.relationship}>{f.relationship} ({f.name})</option>)}
+        </>
+    );
+
+    // Generic handlers
+    const handleAdd = (setter: any, initial: any) => {
+        setter((prev: any) => [...prev, { ...initial, id: generateId(), documents: [] }]);
     };
-    const createRemoveHandler = <T extends {id: string}>(setter: React.Dispatch<React.SetStateAction<T[]>>) => (id: string) => {
-        setter(prev => prev.filter(item => item.id !== id));
+    const handleRemove = (setter: any, id: string) => {
+        setter((prev: any) => prev.filter((i: any) => i.id !== id));
     };
-    const createChangeHandler = <T extends {id: string}>(setter: React.Dispatch<React.SetStateAction<T[]>>) => (id: string, field: keyof T, value: any) => {
-        setter(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+    const handleChange = (setter: any, id: string, field: string, value: string) => {
+        setter((prev: any) => prev.map((i: any) => i.id === id ? { ...i, [field]: value } : i));
     };
-    const createFileUploadHandler = <T extends {id: string, documents: DocumentFile[]}>(setter: React.Dispatch<React.SetStateAction<T[]>>) => 
-        (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const newFiles = Array.from(e.target.files).map(file => Object.assign(file, { id: generateId() }));
-            setter(prev => prev.map(item => 
-                item.id === id ? { ...item, documents: [...item.documents, ...newFiles] } : item
-            ));
+    const handleFile = (setter: any, id: string, e: any) => {
+        if(e.target.files) {
+            const files = Array.from(e.target.files).map((f: any) => Object.assign(f, {id: generateId()}));
+            setter((prev: any) => prev.map((i: any) => i.id === id ? {...i, documents: [...i.documents, ...files]} : i));
         }
     };
-    const createFileRemoveHandler = <T extends {id: string, documents: DocumentFile[]}>(setter: React.Dispatch<React.SetStateAction<T[]>>) => 
-        (id: string, fileId: string) => {
-        setter(prev => prev.map(item => 
-            item.id === id ? { ...item, documents: item.documents.filter(f => f.id !== fileId) } : item
-        ));
+    const handleFileRemove = (setter: any, itemId: string, fileId: string) => {
+        setter((prev: any) => prev.map((i: any) => i.id === itemId ? {...i, documents: i.documents.filter((d: any) => d.id !== fileId)} : i));
     };
 
-    const validateCurrentStep = () => {
-        const newErrors: FormErrors = {};
-        const step = declarationSteps[currentStepIndex];
-        let data: any[] = [];
-        let requiredFields: string[] = [];
-        
-        if (step === 'Assets') { data = assets; requiredFields = ['type', 'description', 'value', 'dateOfAcquisition', 'acquiredFrom', 'sourceOfFunding']; }
-        else if (step === 'Liabilities') { data = liabilities; requiredFields = ['type', 'institution', 'amount', 'dateOfLiability', 'purpose']; }
-        else if (step === 'Income') { data = incomes; requiredFields = ['source', 'amount', 'date']; }
-        else if (step === 'Expenditure') { data = expenditures; requiredFields = ['description', 'amount', 'date']; }
-        else if (step === 'Additional Posts') { data = additionalPosts; requiredFields = ['organisation', 'position', 'details']; }
-        else if (step === 'Post-Employment') { data = postEmployments; requiredFields = ['organisation', 'details', 'startDate']; }
+    // --- STEP RENDERERS ---
 
-        data.forEach(item => {
-            newErrors[item.id] = {};
-            requiredFields.forEach(field => {
-                if (!item[field] || item[field].trim() === '') {
-                    newErrors[item.id][field] = 'This field is required.';
-                }
-            });
-            if (Object.keys(newErrors[item.id]).length === 0) {
-                delete newErrors[item.id];
-            }
-        });
-        
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+    const renderPersonalInfo = () => (
+        <div>
+            <SectionHeader title="Reason for Declaration" subtitle="Select the appropriate type" />
+            <div className="mb-6 bg-blue-50 p-4 rounded-md">
+                <div className="flex gap-6">
+                    {['Assumption of Office', 'Annual Declaration', 'Vacation of Office'].map(type => (
+                        <label key={type} className="flex items-center cursor-pointer">
+                            <input type="radio" name="reason" checked={personal.reason === type} onChange={() => setPersonal({...personal, reason: type as any})} className="h-4 w-4 text-primary focus:ring-primary" />
+                            <span className="ml-2 text-sm font-medium text-gray-700">{type}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            <SectionHeader title="Details of Declarant" subtitle="Your personal information as per records" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormInput label="Name" id="p_name" value={personal.name} onChange={(e:any) => setPersonal({...personal, name: e.target.value})} />
+                <FormInput label="CID / Work Permit" id="p_cid" value={personal.cid} onChange={(e:any) => setPersonal({...personal, cid: e.target.value})} />
+                <FormInput label="Date of Birth" id="p_dob" type="date" value={personal.dob} onChange={(e:any) => setPersonal({...personal, dob: e.target.value})} />
+                <FormInput label="Sex" id="p_sex" value={personal.sex} onChange={(e:any) => setPersonal({...personal, sex: e.target.value})} />
+                <FormInput label="Marital Status" id="p_status" value={personal.maritalStatus} onChange={(e:any) => setPersonal({...personal, maritalStatus: e.target.value})} />
+                <FormInput label="Permanent Address" id="p_addr" placeholder="Dzongkhag, Gewog, Village" value={personal.permanentAddress} onChange={(e:any) => setPersonal({...personal, permanentAddress: e.target.value})} />
+                <FormInput label="Employment Details" id="p_emp" placeholder="EID, Agency, Position, Level" value={personal.employmentDetails} onChange={(e:any) => setPersonal({...personal, employmentDetails: e.target.value})} />
+                <FormInput label="Contact Details" id="p_contact" placeholder="Mobile / Email" value={personal.contact} onChange={(e:any) => setPersonal({...personal, contact: e.target.value})} />
+                <div className="md:col-span-3 mt-2 p-3 bg-gray-100 rounded">
+                    <label className="flex items-center">
+                        <input type="checkbox" checked={personal.spouseCovered} onChange={(e) => setPersonal({...personal, spouseCovered: e.target.checked})} className="h-4 w-4 text-primary rounded" />
+                        <span className="ml-2 text-sm font-bold text-gray-800">Is your spouse also a covered person (Public Official)?</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderFamily = () => (
+        <div>
+            <SectionHeader title="Family Details" subtitle="Spouse, Children and Dependents" />
+            <div className="space-y-4">
+                {family.map((mem) => (
+                    <ItemCard key={mem.id} title={`${mem.relationship}: ${mem.name}`} onRemove={() => handleRemove(setFamily, mem.id)}>
+                        <FormSelect label="Relationship" value={mem.relationship} onChange={(e:any) => handleChange(setFamily, mem.id, 'relationship', e.target.value)}>
+                            <option>Spouse</option><option>Child</option><option>Dependent</option>
+                        </FormSelect>
+                        <FormInput label="Name" value={mem.name} onChange={(e:any) => handleChange(setFamily, mem.id, 'name', e.target.value)} />
+                        <FormInput label="CID / Permit No" value={mem.cid} onChange={(e:any) => handleChange(setFamily, mem.id, 'cid', e.target.value)} />
+                        <FormInput label="Date of Birth" type="date" value={mem.dob} onChange={(e:any) => handleChange(setFamily, mem.id, 'dob', e.target.value)} />
+                        <FormInput label="Marital Status" value={mem.maritalStatus} onChange={(e:any) => handleChange(setFamily, mem.id, 'maritalStatus', e.target.value)} />
+                        <FormInput label="Employment Details" placeholder="Agency, Position" value={mem.employment} onChange={(e:any) => handleChange(setFamily, mem.id, 'employment', e.target.value)} />
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setFamily, {relationship: 'Spouse', name: '', cid: '', dob: '', employment: ''})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Family Member</button>
+            </div>
+        </div>
+    );
+
+    const renderEmployment = () => (
+        <div className="space-y-8">
+            <div>
+                <SectionHeader title="Additional Job / Employment" subtitle="Apart from current office (Paid or Unpaid)" />
+                {addJobs.map(job => (
+                    <ItemCard key={job.id} title="Additional Job" onRemove={() => handleRemove(setAddJobs, job.id)}>
+                        <FormSelect label="Relationship" value={job.relationship} onChange={(e:any) => handleChange(setAddJobs, job.id, 'relationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="Agency / Organization" value={job.agency} onChange={(e:any) => handleChange(setAddJobs, job.id, 'agency', e.target.value)} />
+                        <FormInput label="Position Title" value={job.positionTitle} onChange={(e:any) => handleChange(setAddJobs, job.id, 'positionTitle', e.target.value)} />
+                        <FormInput label="Income (Amount)" value={job.incomeAmount} onChange={(e:any) => handleChange(setAddJobs, job.id, 'incomeAmount', e.target.value)} />
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setAddJobs, {relationship: 'Self', agency: '', positionTitle: '', incomeAmount: ''})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Job</button>
+            </div>
+            <div>
+                <SectionHeader title="Post-Employment Arrangement" subtitle="Plans after separation from current office" />
+                {postJobs.map(job => (
+                    <ItemCard key={job.id} title="Post-Employment Plan" onRemove={() => handleRemove(setPostJobs, job.id)}>
+                        <FormSelect label="Relationship" value={job.relationship} onChange={(e:any) => handleChange(setPostJobs, job.id, 'relationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="New Position / Agency" value={job.newPosition} onChange={(e:any) => handleChange(setPostJobs, job.id, 'newPosition', e.target.value)} />
+                        <FormInput label="Commercial Activity" value={job.commercialActivity} onChange={(e:any) => handleChange(setPostJobs, job.id, 'commercialActivity', e.target.value)} />
+                        <FormSelect label="Offer Accepted?" value={job.offerAccepted} onChange={(e:any) => handleChange(setPostJobs, job.id, 'offerAccepted', e.target.value)}><option>Yes</option><option>No</option></FormSelect>
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setPostJobs, {relationship: 'Self', newPosition: '', commercialActivity: '', offerAccepted: 'No'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Plan</button>
+            </div>
+        </div>
+    );
+
+    const renderImmovable = () => (
+        <div>
+            <SectionHeader title="Immovable Properties" subtitle="Land, Building, House, Flat (Sec 6.1)" />
+            {immovable.map(item => (
+                <ItemCard key={item.id} title={`${item.type} - ${item.thramNo}`} onRemove={() => handleRemove(setImmovable, item.id)}>
+                    <FormSelect label="Owner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setImmovable, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                    <FormSelect label="Type" value={item.type} onChange={(e:any) => handleChange(setImmovable, item.id, 'type', e.target.value)}><option>Land</option><option>Building</option><option>Flat</option><option>House</option></FormSelect>
+                    <FormInput label="Thram / Plot / House No" value={item.thramNo} onChange={(e:any) => handleChange(setImmovable, item.id, 'thramNo', e.target.value)} />
+                    <FormInput label="Size / Qty" value={item.size} onChange={(e:any) => handleChange(setImmovable, item.id, 'size', e.target.value)} />
+                    <FormInput label="Location" value={item.location} onChange={(e:any) => handleChange(setImmovable, item.id, 'location', e.target.value)} />
+                    <FormInput label="Date of Acquisition" type="date" value={item.acquisitionDate} onChange={(e:any) => handleChange(setImmovable, item.id, 'acquisitionDate', e.target.value)} />
+                    <FormInput label="Mode of Acquisition" placeholder="Purchase, Gift, Inheritance" value={item.acquisitionMode} onChange={(e:any) => handleChange(setImmovable, item.id, 'acquisitionMode', e.target.value)} />
+                    <FormInput label="Cost (Nu.)" type="number" value={item.cost} onChange={(e:any) => handleChange(setImmovable, item.id, 'cost', e.target.value)} />
+                    <FormInput label="Source of Finance" value={item.sourceOfFinance} onChange={(e:any) => handleChange(setImmovable, item.id, 'sourceOfFinance', e.target.value)} />
+                    <FormInput label="Acquired From (Name & CID)" value={item.acquiredFrom} onChange={(e:any) => handleChange(setImmovable, item.id, 'acquiredFrom', e.target.value)} />
+                    <FormInput label="Registered Owner Name/CID" value={item.registeredOwner} onChange={(e:any) => handleChange(setImmovable, item.id, 'registeredOwner', e.target.value)} />
+                    <div className="md:col-span-3"><FileUpload documents={item.documents} onFileChange={(e) => handleFile(setImmovable, item.id, e)} onFileRemove={(fid) => handleFileRemove(setImmovable, item.id, fid)} /></div>
+                </ItemCard>
+            ))}
+            <button onClick={() => handleAdd(setImmovable, {type: 'Land', ownerRelationship: 'Self'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Property</button>
+        </div>
+    );
+
+    const renderMovable = () => (
+        <div className="space-y-8">
+            <div>
+                <SectionHeader title="Shares and Stocks" subtitle="Sec 6.2" />
+                {shares.map(item => (
+                    <ItemCard key={item.id} title={`Shares in ${item.company}`} onRemove={() => handleRemove(setShares, item.id)}>
+                        <FormSelect label="Owner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setShares, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="Company" value={item.company} onChange={(e:any) => handleChange(setShares, item.id, 'company', e.target.value)} />
+                        <FormInput label="Num of Shares" value={item.numberOfShares} onChange={(e:any) => handleChange(setShares, item.id, 'numberOfShares', e.target.value)} />
+                        <FormInput label="Total Cost (Nu.)" value={item.cost} onChange={(e:any) => handleChange(setShares, item.id, 'cost', e.target.value)} />
+                        <div className="md:col-span-3"><FileUpload documents={item.documents} onFileChange={(e) => handleFile(setShares, item.id, e)} onFileRemove={(fid) => handleFileRemove(setShares, item.id, fid)} /></div>
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setShares, {ownerRelationship: 'Self'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Shares</button>
+            </div>
+            <div>
+                <SectionHeader title="Vehicles and Machineries" subtitle="Sec 6.3" />
+                {vehicles.map(item => (
+                    <ItemCard key={item.id} title={`${item.make} ${item.model}`} onRemove={() => handleRemove(setVehicles, item.id)}>
+                        <FormSelect label="Owner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setVehicles, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="Type" value={item.type} onChange={(e:any) => handleChange(setVehicles, item.id, 'type', e.target.value)} />
+                        <FormInput label="Registration No." value={item.registrationNo} onChange={(e:any) => handleChange(setVehicles, item.id, 'registrationNo', e.target.value)} />
+                        <FormInput label="Make/Model" value={item.model} onChange={(e:any) => handleChange(setVehicles, item.id, 'model', e.target.value)} />
+                        <FormInput label="Cost (Nu.)" value={item.cost} onChange={(e:any) => handleChange(setVehicles, item.id, 'cost', e.target.value)} />
+                        <div className="md:col-span-3"><FileUpload documents={item.documents} onFileChange={(e) => handleFile(setVehicles, item.id, e)} onFileRemove={(fid) => handleFileRemove(setVehicles, item.id, fid)} /></div>
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setVehicles, {ownerRelationship: 'Self', type: 'Vehicle'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Vehicle</button>
+            </div>
+        </div>
+    );
+
+    const renderOtherAssets = () => (
+        <div className="space-y-8">
+            <div>
+                <SectionHeader title="Virtual Assets" subtitle="Bitcoin, Litecoin, Ether etc (Sec 6.4)" />
+                {virtual.map(item => (
+                    <ItemCard key={item.id} title={item.type} onRemove={() => handleRemove(setVirtual, item.id)}>
+                        <FormSelect label="Owner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setVirtual, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="Type" value={item.type} onChange={(e:any) => handleChange(setVirtual, item.id, 'type', e.target.value)} />
+                        <FormInput label="Quantity" value={item.qty} onChange={(e:any) => handleChange(setVirtual, item.id, 'qty', e.target.value)} />
+                        <FormInput label="Cost (Nu.)" value={item.cost} onChange={(e:any) => handleChange(setVirtual, item.id, 'cost', e.target.value)} />
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setVirtual, {ownerRelationship: 'Self'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Virtual Asset</button>
+            </div>
+            <div>
+                <SectionHeader title="Personal Savings" subtitle="Bank deposits, Cash in hand > 1 month salary (Sec 6.5)" />
+                {savings.map(item => (
+                    <ItemCard key={item.id} title={`${item.bankName} - ${item.balance}`} onRemove={() => handleRemove(setSavings, item.id)}>
+                        <FormSelect label="Owner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setSavings, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormSelect label="Type" value={item.type} onChange={(e:any) => handleChange(setSavings, item.id, 'type', e.target.value)}><option>Bank Deposit</option><option>Cash in Hand</option><option>Money Lent</option></FormSelect>
+                        <FormInput label="Bank Name" value={item.bankName} onChange={(e:any) => handleChange(setSavings, item.id, 'bankName', e.target.value)} />
+                        <FormInput label="Account No" value={item.accountNumber} onChange={(e:any) => handleChange(setSavings, item.id, 'accountNumber', e.target.value)} />
+                        <FormInput label="Balance (Nu.)" value={item.balance} onChange={(e:any) => handleChange(setSavings, item.id, 'balance', e.target.value)} />
+                        <div className="md:col-span-3"><FileUpload documents={item.documents} onFileChange={(e) => handleFile(setSavings, item.id, e)} onFileRemove={(fid) => handleFileRemove(setSavings, item.id, fid)} /></div>
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setSavings, {ownerRelationship: 'Self', type: 'Bank Deposit'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Saving</button>
+            </div>
+            <div>
+                <SectionHeader title="Convertible Assets" subtitle="Jewelry, Gold, Art > Nu. 100,000 (Sec 6.6)" />
+                {convertible.map(item => (
+                    <ItemCard key={item.id} title={item.type} onRemove={() => handleRemove(setConvertible, item.id)}>
+                        <FormSelect label="Owner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setConvertible, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="Type/Description" value={item.type} onChange={(e:any) => handleChange(setConvertible, item.id, 'type', e.target.value)} />
+                        <FormInput label="Cost (Nu.)" value={item.cost} onChange={(e:any) => handleChange(setConvertible, item.id, 'cost', e.target.value)} />
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setConvertible, {ownerRelationship: 'Self'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Convertible Asset</button>
+            </div>
+        </div>
+    );
+
+    const renderIncomeLiability = () => (
+        <div className="space-y-8">
+            <div>
+                <SectionHeader title="Income Statement" subtitle="Sources of all income (Annual Gross) (Sec 6.8)" />
+                {income.map(item => (
+                    <ItemCard key={item.id} title={`${item.ownerRelationship} Income`} onRemove={() => handleRemove(setIncome, item.id)}>
+                        <FormSelect label="Earner" value={item.ownerRelationship} onChange={(e:any) => handleChange(setIncome, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormInput label="Gross Salary" type="number" value={item.salary} onChange={(e:any) => handleChange(setIncome, item.id, 'salary', e.target.value)} />
+                        <FormInput label="Business/Consultancy" type="number" value={item.business} onChange={(e:any) => handleChange(setIncome, item.id, 'business', e.target.value)} />
+                        <FormInput label="Rental" type="number" value={item.rental} onChange={(e:any) => handleChange(setIncome, item.id, 'rental', e.target.value)} />
+                        <FormInput label="Dividends" type="number" value={item.dividends} onChange={(e:any) => handleChange(setIncome, item.id, 'dividends', e.target.value)} />
+                        <FormInput label="Others" type="number" value={item.others} onChange={(e:any) => handleChange(setIncome, item.id, 'others', e.target.value)} />
+                        <div className="md:col-span-3"><FileUpload documents={item.documents} onFileChange={(e) => handleFile(setIncome, item.id, e)} onFileRemove={(fid) => handleFileRemove(setIncome, item.id, fid)} /></div>
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setIncome, {ownerRelationship: 'Self'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Income Source</button>
+            </div>
+            <div>
+                <SectionHeader title="Liabilities" subtitle="Loans and Borrowings (Sec 6.9)" />
+                {liabilities.map(item => (
+                    <ItemCard key={item.id} title={`${item.type} - ${item.lenderDetails}`} onRemove={() => handleRemove(setLiabilities, item.id)}>
+                        <FormSelect label="Borrower" value={item.ownerRelationship} onChange={(e:any) => handleChange(setLiabilities, item.id, 'ownerRelationship', e.target.value)}>{getRelationOptions()}</FormSelect>
+                        <FormSelect label="Type" value={item.type} onChange={(e:any) => handleChange(setLiabilities, item.id, 'type', e.target.value)}><option>Bank Loan</option><option>Private Borrowing</option></FormSelect>
+                        <FormInput label="Sanctioned Amount" value={item.sanctionedAmount} onChange={(e:any) => handleChange(setLiabilities, item.id, 'sanctionedAmount', e.target.value)} />
+                        <FormInput label="Lender Name/Bank" value={item.lenderDetails} onChange={(e:any) => handleChange(setLiabilities, item.id, 'lenderDetails', e.target.value)} />
+                        <FormInput label="Date Borrowed" type="date" value={item.borrowingDate} onChange={(e:any) => handleChange(setLiabilities, item.id, 'borrowingDate', e.target.value)} />
+                        <div className="md:col-span-3"><FileUpload documents={item.documents} onFileChange={(e) => handleFile(setLiabilities, item.id, e)} onFileRemove={(fid) => handleFileRemove(setLiabilities, item.id, fid)} /></div>
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setLiabilities, {ownerRelationship: 'Self', type: 'Bank Loan'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Liability</button>
+            </div>
+        </div>
+    );
+
+    const renderExpenditure = () => (
+        <div className="space-y-8">
+            <div>
+                <SectionHeader title="Educational Expenditure" subtitle="Sec 6.10 A" />
+                {eduExp.map(item => (
+                    <ItemCard key={item.id} title={`Edu: ${item.name}`} onRemove={() => handleRemove(setEduExp, item.id)}>
+                        <FormInput label="Name & Relationship" value={item.name} onChange={(e:any) => handleChange(setEduExp, item.id, 'name', e.target.value)} />
+                        <FormInput label="Amount (Nu.)" value={item.amount} onChange={(e:any) => handleChange(setEduExp, item.id, 'amount', e.target.value)} />
+                        <FormInput label="School/College/Place" value={item.institution} onChange={(e:any) => handleChange(setEduExp, item.id, 'institution', e.target.value)} />
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setEduExp, {name: '', amount: '', institution: ''})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Education Exp</button>
+            </div>
+            <div>
+                <SectionHeader title="Other Expenditure" subtitle="Rental, Insurance, Loan Repayment, PF/GIS, etc (Sec 6.10 B)" />
+                {otherExp.map(item => (
+                    <ItemCard key={item.id} title={item.category} onRemove={() => handleRemove(setOtherExp, item.id)}>
+                        <FormSelect label="Category" value={item.category} onChange={(e:any) => handleChange(setOtherExp, item.id, 'category', e.target.value)}>
+                            <option>Rental</option><option>Insurance</option><option>Loan Repayment</option><option>Mandatory Deduction (PF/GIS/TDS)</option><option>Travel</option><option>Vacation</option><option>Medical</option><option>Other</option>
+                        </FormSelect>
+                        <FormInput label="Details (Location/Company)" value={item.details} onChange={(e:any) => handleChange(setOtherExp, item.id, 'details', e.target.value)} />
+                        <FormInput label="Amount (Nu.)" value={item.amount} onChange={(e:any) => handleChange(setOtherExp, item.id, 'amount', e.target.value)} />
+                    </ItemCard>
+                ))}
+                <button onClick={() => handleAdd(setOtherExp, {category: 'Rental', details: '', amount: ''})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Other Exp</button>
+            </div>
+        </div>
+    );
+
+    const renderAffidavit = () => (
+        <div className="text-center p-8 space-y-4">
+            <h2 className="text-xl font-bold">Sworn Affidavit</h2>
+            <div className="bg-yellow-50 border border-yellow-200 p-6 text-left text-sm text-gray-700 rounded-lg space-y-4">
+                <p>I swear or affirm that all the information that I have given here is true, correct and complete to the best of my knowledge, information and belief.</p>
+                <p>I understand that I shall be liable as per section 64 of ACAB 2011, if I have intentionally given false information. I also know that I may be asked to show proof of any information I have given.</p>
+                <p>I also hereby authorize the Commission or its duly authorized agency to obtain and secure from all appropriate agencies, including the Department of Revenue and Customs, such documents that may show such income, assets, and liabilities.</p>
+            </div>
+            <label className="flex items-center justify-center mt-6 space-x-2 cursor-pointer">
+                <input type="checkbox" checked={affidavitAgreed} onChange={(e) => setAffidavitAgreed(e.target.checked)} className="w-5 h-5 text-primary rounded focus:ring-primary" />
+                <span className="font-bold text-gray-900">I AGREE TO THE ABOVE AFFIDAVIT</span>
+            </label>
+        </div>
+    );
+
+    const renderCurrentStep = () => {
+        switch (currentStep) {
+            case 0: return (
+                <div className="prose text-sm text-gray-600">
+                    <h2 className="text-xl font-bold text-primary mb-4">Important Information</h2>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><strong>Why file?</strong> As per section 38(1) of ACAB 2011, to promote transparency.</li>
+                        <li><strong>What to file?</strong> Assets, Income, and Liabilities of yourself, spouse, and dependents.</li>
+                        <li><strong>Penalty:</strong> Filing false information may subject you to penalty or criminal prosecution.</li>
+                    </ul>
+                </div>
+            );
+            case 1: return renderPersonalInfo();
+            case 2: return renderFamily();
+            case 3: return renderEmployment();
+            case 4: return renderImmovable();
+            case 5: return renderMovable();
+            case 6: return renderOtherAssets();
+            case 7: return renderIncomeLiability();
+            case 8: return renderExpenditure();
+            case 9: return renderAffidavit();
+            default: return null;
+        }
     };
-    
+
     const handleNext = () => {
-        if (!validateCurrentStep()) return;
-
-        const currentStep = declarationSteps[currentStepIndex];
-        if (currentStepIndex < declarationSteps.length - 1) {
-            setCompletedSteps(prev => new Set(prev).add(currentStep));
-            if (declarationSteps[currentStepIndex] === 'Summary & Submit') {
-                setAffidavitModalOpen(true);
-            } else {
-                setCurrentStepIndex(currentStepIndex + 1);
-            }
-        }
+        setCompletedSteps(prev => new Set(prev).add(steps[currentStep]));
+        if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
+        else if (currentStep === steps.length - 1 && affidavitAgreed) alert("Declaration Submitted Successfully!");
     };
 
     const handleBack = () => {
-        if (currentStepIndex > 0) {
-            setCurrentStepIndex(currentStepIndex - 1);
-        }
-    };
-    
-    const handleFinalSubmit = () => {
-        if (affidavitAgreed) {
-            setAffidavitModalOpen(false);
-            setCompletedSteps(prev => new Set(prev).add('Summary & Submit'));
-            setCurrentStepIndex(currentStepIndex + 1);
-        }
+        if (currentStep > 0) setCurrentStep(currentStep - 1);
     };
 
-    const renderStepContent = () => {
-        switch (currentStepIndex) {
-            case 0: return <InstructionsStep />;
-            case 1: return <PersonalInfoStep />;
-            case 2: return <AssetsStep data={assets} onAdd={createItemHandler(setAssets, {type: 'Land', description: ''} as Asset)} onRemove={createRemoveHandler(setAssets)} onChange={createChangeHandler(setAssets)} onFileChange={createFileUploadHandler(setAssets)} onFileRemove={createFileRemoveHandler(setAssets)} errors={errors} />;
-            case 3: return <LiabilitiesStep data={liabilities} onAdd={createItemHandler(setLiabilities, {type: 'Home Loan'} as Liability)} onRemove={createRemoveHandler(setLiabilities)} onChange={createChangeHandler(setLiabilities)} onFileChange={createFileUploadHandler(setLiabilities)} onFileRemove={createFileRemoveHandler(setLiabilities)} errors={errors} />;
-            case 4: return <GenericFormStep title="Declare Your Income" description="List all sources of income for the declaration period." data={incomes} onAdd={createItemHandler(setIncomes, {} as Income)} onRemove={createRemoveHandler(setIncomes)} onChange={createChangeHandler(setIncomes)} onFileChange={createFileUploadHandler(setIncomes)} onFileRemove={createFileRemoveHandler(setIncomes)} addLabel="Add Income Source" fields={[{name: 'source', label: 'Source of Income', placeholder: 'e.g., Salary, Rental'}, {name: 'amount', label: 'Amount (Nu.)', type: 'number', placeholder: '100000'}, {name: 'date', label: 'Date Received', type: 'date'}]} errors={errors} />;
-            case 5: return <GenericFormStep title="Declare Major Expenditures" description="List any major expenditures incurred during the period (e.g., purchase of property, vehicle)." data={expenditures} onAdd={createItemHandler(setExpenditures, {} as Expenditure)} onRemove={createRemoveHandler(setExpenditures)} onChange={createChangeHandler(setExpenditures)} onFileChange={createFileUploadHandler(setExpenditures)} onFileRemove={createFileRemoveHandler(setExpenditures)} addLabel="Add Expenditure" fields={[{name: 'description', label: 'Description', placeholder: 'e.g., Land Purchase'}, {name: 'amount', label: 'Amount (Nu.)', type: 'number', placeholder: '500000'}, {name: 'date', label: 'Date of Expenditure', type: 'date'}]} errors={errors} />;
-            case 6: return <GenericFormStep title="Additional Posts Held" description="Declare any other official, professional, or commercial positions held." data={additionalPosts} onAdd={createItemHandler(setAdditionalPosts, {} as AdditionalPost)} onRemove={createRemoveHandler(setAdditionalPosts)} onChange={createChangeHandler(setAdditionalPosts)} onFileChange={createFileUploadHandler(setAdditionalPosts)} onFileRemove={createFileRemoveHandler(setAdditionalPosts)} addLabel="Add Post" fields={[{name: 'organisation', label: 'Organisation', placeholder: 'e.g., Royal University of Bhutan'}, {name: 'position', label: 'Position / Title', placeholder: 'e.g., Board Member'}, {name: 'details', label: 'Details / Responsibilities', placeholder: 'Provide brief details'}]} errors={errors} />;
-            case 7: return <GenericFormStep title="Post-Employment Plans" description="Declare any agreements or plans for future employment after leaving public service." data={postEmployments} onAdd={createItemHandler(setPostEmployments, {} as PostEmployment)} onRemove={createRemoveHandler(setPostEmployments)} onChange={createChangeHandler(setPostEmployments)} onFileChange={createFileUploadHandler(setPostEmployments)} onFileRemove={createFileRemoveHandler(setPostEmployments)} addLabel="Add Plan" fields={[{name: 'organisation', label: 'Future Employer / Organisation', placeholder: 'e.g., Private Consultancy Firm'}, {name: 'details', label: 'Nature of Employment / Role', placeholder: 'e.g., Senior Consultant'}, {name: 'startDate', label: 'Anticipated Start Date', type: 'date'}]} errors={errors} />;
-            case 8: return <SummaryStep allData={{ assets, liabilities, incomes, expenditures, additionalPosts, postEmployments }} />;
-            case 9: return <ConfirmationStep />;
-            default: return <div>Unknown Step</div>;
-        }
-    };
-    
     return (
-        <div>
-             <Modal
-                isOpen={isAffidavitModalOpen}
-                onClose={() => setAffidavitModalOpen(false)}
-                title="Sworn Affidavit"
-            >
-                <div className="space-y-4 text-text-secondary">
-                    <p>I, <strong>Kinley Wangchuk</strong>, holding Official ID <strong>12345</strong>, do hereby solemnly affirm and declare that the information furnished in this declaration, including all attached documents, is true, complete, and correct to the best of my knowledge and belief.</p>
-                    <p>I understand that any false, misleading, or incomplete information provided herein is an offense under the Anti-Corruption Act of Bhutan and may subject me to administrative penalties and/or criminal prosecution.</p>
-                    <div className="pt-4">
-                        <label className="flex items-start space-x-3">
-                            <input type="checkbox" checked={affidavitAgreed} onChange={(e) => setAffidavitAgreed(e.target.checked)} className="h-5 w-5 mt-1 text-primary focus:ring-accent border-gray-300 rounded shrink-0" />
-                            <span>I have read, understood, and agree to the terms of this affidavit.</span>
-                        </label>
-                    </div>
-                </div>
-                <div className="mt-6 flex justify-end">
-                    <button onClick={handleFinalSubmit} disabled={!affidavitAgreed} className="px-6 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                        Confirm & Submit
-                    </button>
-                </div>
-            </Modal>
-            
-            <div className="bg-white rounded-lg shadow-md p-6 sm:p-8">
-                <ProgressBar steps={declarationSteps} currentStepIndex={currentStepIndex} completedSteps={completedSteps} />
-                <div className="mt-8">{renderStepContent()}</div>
-                
-                {currentStepIndex < declarationSteps.length - 1 && (
-                    <div className="mt-8 pt-6 border-t flex justify-between items-center">
-                        <button onClick={handleBack} disabled={currentStepIndex === 0} className="px-6 py-2 border border-gray-300 rounded-md text-text-main hover:bg-gray-50 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">Back</button>
-                        <button onClick={handleNext} className="px-6 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm">
-                            {declarationSteps[currentStepIndex] === 'Summary & Submit' ? 'Proceed to Affidavit' : 'Save & Continue'}
-                        </button>
-                    </div>
-                )}
+        <div className="bg-white rounded-lg shadow-md p-6 sm:p-8">
+            <ProgressBar steps={steps} currentStepIndex={currentStep} completedSteps={completedSteps} />
+            <div className="mt-8 mb-8 min-h-[400px]">
+                {renderCurrentStep()}
+            </div>
+            <div className="pt-6 border-t flex justify-between items-center">
+                <button onClick={handleBack} disabled={currentStep === 0} className="px-6 py-2 border border-gray-300 rounded-md text-text-main hover:bg-gray-50 disabled:opacity-50">Back</button>
+                <button onClick={handleNext} disabled={currentStep === 9 && !affidavitAgreed} className="px-6 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark disabled:opacity-50">
+                    {currentStep === 9 ? 'Submit Declaration' : 'Save & Continue'}
+                </button>
             </div>
         </div>
     );

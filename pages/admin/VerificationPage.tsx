@@ -222,7 +222,7 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                 {/* Main Panel */}
                 <div className="lg:col-span-8">
                     {selected ? (
-                        <div className="bg-white rounded-lg shadow min-h-[600px] flex flex-col">
+                        <div className="bg-white rounded-lg shadow p-6">
                             <div className="p-6 border-b">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>

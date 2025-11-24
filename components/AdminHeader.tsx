@@ -71,14 +71,21 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                            <NavLink icon={<DashboardIcon />} label="Overview" page="dashboard" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<UserGroupIcon />} label="Declarants" page="users" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<ClipboardCheckIcon />} label="Verification" page="verification" activePage={activePage} setActivePage={setActivePage} />
+                           
+                           {/* Payments: Available for both Admin and Agency Admin */}
+                           {(userRole === 'admin' || userRole === 'agency_admin') && (
+                               <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
+                           )}
+
+                           {/* Exclusive ACC Admin Features */}
                            {userRole === 'admin' && (
                                <>
                                    <NavLink icon={<ScaleIcon />} label="DA Cases" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
-                                   <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
                                    <NavLink icon={<ShareIcon />} label="Info Sharing" page="info-sharing" activePage={activePage} setActivePage={setActivePage} />
                                    <NavLink icon={<ServerIcon />} label="Connections" page="api-mgmt" activePage={activePage} setActivePage={setActivePage} />
                                </>
                            )}
+                           
                            <NavLink icon={<ChartBarIcon />} label="Analytics" page="analytics" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Reports" page="reports" activePage={activePage} setActivePage={setActivePage} />
                         </ul>

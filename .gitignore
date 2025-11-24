@@ -84,3 +84,11 @@ yarn v2
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+# System Files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules
+dist
+.env

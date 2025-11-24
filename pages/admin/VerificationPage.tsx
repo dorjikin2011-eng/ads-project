@@ -27,6 +27,9 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
     const [selectedId, setSelectedId] = useState<string | null>(preSelectedId || null);
     const [checks, setChecks] = useState({ timely: false, complete: false, accurate: false });
     const [isCertModalOpen, setCertModalOpen] = useState(false);
+    const [isPenaltyModalOpen, setPenaltyModalOpen] = useState(false);
+    const [penaltyAmount, setPenaltyAmount] = useState('');
+    const [penaltyReason, setPenaltyReason] = useState('Late Filing');
 
     useEffect(() => { if (preSelectedId) setSelectedId(preSelectedId); }, [preSelectedId]);
     const selected = selectedId ? mockDeclarantsData[selectedId] : null;
@@ -44,6 +47,11 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
         setCertModalOpen(false);
     };
 
+    const handlePenaltySubmit = () => {
+        alert(`Penalty of Nu. ${penaltyAmount} imposed on ${selected?.name} for ${penaltyReason}. Added to Action Taken Report.`);
+        setPenaltyModalOpen(false);
+    };
+
     return (
         <div className="flex flex-col h-full">
             {/* Certificate Modal */}
@@ -54,6 +62,29 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                     </div>
                     <p className="text-gray-600 text-sm">This action will generate a digital Clearance Certificate available for the declarant to download.</p>
                     <button onClick={issueCertificate} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 font-bold">Verify & Notify ACC</button>
+                </div>
+            </Modal>
+
+            {/* Penalty Modal */}
+            <Modal isOpen={isPenaltyModalOpen} onClose={() => setPenaltyModalOpen(false)} title="Impose Penalty">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">Impose a fine for non-compliance. This will be recorded in the Action Taken Report.</p>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Reason</label>
+                        <select className="w-full border rounded p-2 text-sm" value={penaltyReason} onChange={(e) => setPenaltyReason(e.target.value)}>
+                            <option>Late Filing</option>
+                            <option>Non-Filing</option>
+                            <option>Incomplete Information</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Amount (Nu.)</label>
+                        <input type="number" className="w-full border rounded p-2 text-sm" value={penaltyAmount} onChange={(e) => setPenaltyAmount(e.target.value)} placeholder="e.g. 1000" />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button onClick={() => setPenaltyModalOpen(false)} className="px-3 py-1 bg-gray-100 rounded text-sm">Cancel</button>
+                        <button onClick={handlePenaltySubmit} className="px-3 py-1 bg-red-600 text-white rounded text-sm">Confirm Penalty</button>
+                    </div>
                 </div>
             </Modal>
 
@@ -114,16 +145,27 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                                 </div>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t flex justify-end space-x-3">
-                                <button className="px-4 py-2 border border-red-300 text-red-600 rounded hover:bg-red-50 font-medium">Return for Correction</button>
+                            <div className="mt-8 pt-6 border-t flex justify-between items-center">
+                                {/* PENALTY BUTTON - VISIBLE FOR AGENCY ADMIN TOO */}
                                 <button 
-                                    onClick={handleVerify} 
-                                    disabled={!checks.timely || !checks.complete || !checks.accurate}
-                                    className="px-6 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                    onClick={() => setPenaltyModalOpen(true)}
+                                    className="px-4 py-2 border border-red-300 text-red-600 rounded hover:bg-red-50 font-medium flex items-center"
                                 >
-                                    <CheckIcon className="w-5 h-5 mr-2" />
-                                    {selected.type === 'Vacation of Office' ? 'Verify & Issue Certificate' : 'Verify Compliance'}
+                                    <CreditCardIcon className="w-4 h-4 mr-2" />
+                                    Impose Penalty
                                 </button>
+
+                                <div className="flex space-x-3">
+                                    <button className="px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 font-medium">Return for Correction</button>
+                                    <button 
+                                        onClick={handleVerify} 
+                                        disabled={!checks.timely || !checks.complete || !checks.accurate}
+                                        className="px-6 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                    >
+                                        <CheckIcon className="w-5 h-5 mr-2" />
+                                        {selected.type === 'Vacation of Office' ? 'Verify & Issue Certificate' : 'Verify Compliance'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : (

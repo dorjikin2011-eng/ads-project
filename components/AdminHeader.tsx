@@ -10,6 +10,7 @@ import ScaleIcon from './icons/ScaleIcon';
 import UserGroupIcon from './icons/UserGroupIcon';
 import BanknotesIcon from './icons/BanknotesIcon';
 import ShareIcon from './icons/ShareIcon';
+import ServerIcon from './icons/ServerIcon';
 import { UserRole } from '../types';
 
 interface AdminHeaderProps {
@@ -75,6 +76,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                                    <NavLink icon={<ScaleIcon />} label="DA Cases" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
                                    <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
                                    <NavLink icon={<ShareIcon />} label="Info Sharing" page="info-sharing" activePage={activePage} setActivePage={setActivePage} />
+                                   <NavLink icon={<ServerIcon />} label="Connections" page="api-mgmt" activePage={activePage} setActivePage={setActivePage} />
                                </>
                            )}
                            <NavLink icon={<ChartBarIcon />} label="Analytics" page="analytics" activePage={activePage} setActivePage={setActivePage} />

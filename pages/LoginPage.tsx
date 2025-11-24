@@ -18,6 +18,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       switch(role) {
           case 'admin': return 'ACC Central Administration';
           case 'agency_admin': return 'Agency Administration (Decentralized)';
+          case 'hoa': return 'Head of Agency (Executive)';
           default: return 'Public Official Declaration';
       }
   }
@@ -26,6 +27,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       switch(role) {
           case 'admin': return 'For Anti-Corruption Commission staff monitoring Schedule I declarations and Agency reports.';
           case 'agency_admin': return 'For Agency Administrators managing Schedule II declarations and internal verification.';
+          case 'hoa': return 'For Head of Agency to review compliance reports and approve submission to ACC.';
           default: return 'For all Public Officials to file annual asset declarations.';
       }
   }
@@ -45,11 +47,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </div>
           
           {/* Role Switcher */}
-          <div className="flex rounded-md shadow-sm mb-6" role="group">
+          <div className="flex flex-wrap rounded-md shadow-sm mb-6" role="group">
             <button
                 type="button"
                 onClick={() => setLoginType('official')}
-                className={`flex-1 px-2 py-2 text-xs font-medium border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'official' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
+                className={`flex-1 px-2 py-2 text-xs font-medium border border-gray-200 rounded-tl-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'official' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
             >
                 Official
             </button>
@@ -62,8 +64,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </button>
             <button
                 type="button"
+                onClick={() => setLoginType('hoa')}
+                className={`flex-1 px-2 py-2 text-xs font-medium border-t border-b border-r border-gray-200 hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'hoa' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
+            >
+                Head of Agency
+            </button>
+            <button
+                type="button"
                 onClick={() => setLoginType('admin')}
-                className={`flex-1 px-2 py-2 text-xs font-medium border-t border-b border-r border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'admin' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
+                className={`flex-1 px-2 py-2 text-xs font-medium border-t border-b border-r border-gray-200 rounded-tr-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'admin' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
             >
                 ACC Admin
             </button>

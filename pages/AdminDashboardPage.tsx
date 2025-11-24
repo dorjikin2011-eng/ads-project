@@ -42,6 +42,8 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAgency, setSelectedAgency] = useState('All');
     const [selectedStatus, setSelectedStatus] = useState('All');
+    // New Schedule Filter
+    const [scheduleFilter, setScheduleFilter] = useState<'All' | 'Schedule I' | 'Schedule II'>('All');
 
     // Filter logic based on role and search
     const filteredSubmissions = useMemo(() => {
@@ -49,7 +51,9 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
             // 1. Role-based Access Control
             let isRoleAllowed = false;
             if (userRole === 'admin') {
-                isRoleAllowed = item.schedule === 'Schedule I'; // ACC sees Schedule I
+                // ACC Admin can see all, but filtered by the schedule toggle
+                if (scheduleFilter === 'All') isRoleAllowed = true;
+                else isRoleAllowed = item.schedule === scheduleFilter;
             } else if (userRole === 'agency_admin') {
                 isRoleAllowed = item.schedule === 'Schedule II' && item.agency === 'Ministry of Finance'; // Agency sees own Schedule II
             }
@@ -72,13 +76,13 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
 
             return matchesSearch && matchesAgency && matchesStatus;
         });
-    }, [userRole, searchQuery, selectedAgency, selectedStatus]);
+    }, [userRole, searchQuery, selectedAgency, selectedStatus, scheduleFilter]);
 
     // Get unique agencies for the filter dropdown (only for ACC)
     const availableAgencies = useMemo(() => {
-        const agencies = new Set(allSubmissions.filter(s => s.schedule === 'Schedule I').map(s => s.agency));
+        const agencies = new Set(allSubmissions.filter(s => userRole === 'admin' || s.schedule === 'Schedule II').map(s => s.agency));
         return ['All', ...Array.from(agencies)];
-    }, []);
+    }, [userRole]);
 
     // Status options
     const availableStatuses = ['All', ...Object.values(DeclarationStatus)];
@@ -87,7 +91,28 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
 
     return (
     <>
-        <h1 className="text-2xl font-bold text-text-main mb-6">{roleTitle}</h1>
+        <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-text-main">{roleTitle}</h1>
+            
+            {/* Schedule Filter Toggle (ACC Admin Only) */}
+            {userRole === 'admin' && (
+                <div className="bg-white border border-gray-300 rounded-md p-1 flex shadow-sm">
+                    {['All', 'Schedule I', 'Schedule II'].map((sch) => (
+                        <button
+                            key={sch}
+                            onClick={() => setScheduleFilter(sch as any)}
+                            className={`px-4 py-1.5 text-sm font-medium rounded ${
+                                scheduleFilter === sch 
+                                    ? 'bg-primary text-white shadow-sm' 
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            {sch}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -169,7 +194,7 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
         <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-text-main">
-                    {userRole === 'admin' ? 'Schedule I Declarations' : 'Schedule II Declarations'}
+                    Declarations List
                     <span className="text-sm font-normal text-text-secondary ml-2">
                         ({filteredSubmissions.length} records found)
                     </span>

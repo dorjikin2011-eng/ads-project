@@ -7,131 +7,54 @@ import Modal from '../../components/Modal';
 import CheckIcon from '../../components/icons/CheckIcon';
 import DocumentIcon from '../../components/icons/DocumentIcon';
 
-interface Official {
-    id: string;
-    name: string;
-    email: string;
-    designation: string;
-    agency: string;
-    schedule: 'Schedule I' | 'Schedule II';
-    status: 'Active' | 'Inactive';
-    role?: 'admin' | 'agency_admin' | 'hoa';
-    lastLogin?: string;
-}
+// ... (Official Interface & Mock Data - Same as before) ...
+interface Official { id: string; name: string; email: string; designation: string; agency: string; schedule: 'Schedule I' | 'Schedule II'; status: 'Active' | 'Inactive'; role?: 'admin' | 'agency_admin' | 'hoa'; lastLogin?: string; }
+const initialOfficials: Official[] = [ { id: '11223344', name: 'H.E. Lyonpo Dorji', email: 'dorji@cabinet.gov.bt', designation: 'Minister', agency: 'Cabinet', schedule: 'Schedule I', status: 'Active', role: 'hoa', lastLogin: '2024-02-20' }, { id: '99887766', name: 'Dasho Pema', email: 'pema@mof.gov.bt', designation: 'Secretary', agency: 'Ministry of Finance', schedule: 'Schedule I', status: 'Active', role: 'hoa', lastLogin: '2024-02-18' }, { id: '55667788', name: 'Mr. Tashi Wangmo', email: 'tashi@mof.gov.bt', designation: 'HR Officer', agency: 'Ministry of Finance', schedule: 'Schedule II', status: 'Active', role: 'agency_admin', lastLogin: '2024-02-15' }, { id: '44332211', name: 'Mrs. Ugyen Tenzin', email: 'ugyen@mof.gov.bt', designation: 'Accountant', agency: 'Ministry of Finance', schedule: 'Schedule II', status: 'Inactive', lastLogin: '2023-12-10' }, { id: '33221100', name: 'Karma Dorji', email: 'karma@moe.gov.bt', designation: 'Chief HR Officer', agency: 'Ministry of Education', schedule: 'Schedule II', status: 'Active', role: 'agency_admin', lastLogin: '2024-03-01' }, ];
+const initialRequests = [ { id: 'REQ-ADM-01', type: 'Change Agency Admin', agency: 'Ministry of Education', nominee: 'Karma Tenzin (102030)', status: 'Pending', date: '2024-03-12' }, { id: 'REQ-ADM-02', type: 'Add Sub-Admin', agency: 'Thimphu Thromde', nominee: 'Pema Lhamo (504030)', status: 'Approved', date: '2024-03-10' } ];
 
-// Mock Data
-const initialOfficials: Official[] = [
-    { id: '11223344', name: 'H.E. Lyonpo Dorji', email: 'dorji@cabinet.gov.bt', designation: 'Minister', agency: 'Cabinet', schedule: 'Schedule I', status: 'Active', role: 'hoa', lastLogin: '2024-02-20' },
-    { id: '99887766', name: 'Dasho Pema', email: 'pema@mof.gov.bt', designation: 'Secretary', agency: 'Ministry of Finance', schedule: 'Schedule I', status: 'Active', role: 'hoa', lastLogin: '2024-02-18' },
-    { id: '55667788', name: 'Mr. Tashi Wangmo', email: 'tashi@mof.gov.bt', designation: 'HR Officer', agency: 'Ministry of Finance', schedule: 'Schedule II', status: 'Active', role: 'agency_admin', lastLogin: '2024-02-15' },
-    { id: '44332211', name: 'Mrs. Ugyen Tenzin', email: 'ugyen@mof.gov.bt', designation: 'Accountant', agency: 'Ministry of Finance', schedule: 'Schedule II', status: 'Inactive', lastLogin: '2023-12-10' },
-    { id: '33221100', name: 'Karma Dorji', email: 'karma@moe.gov.bt', designation: 'Chief HR Officer', agency: 'Ministry of Education', schedule: 'Schedule II', status: 'Active', role: 'agency_admin', lastLogin: '2024-03-01' },
-];
-
-// Mock Requests
-const initialRequests = [
-    { id: 'REQ-ADM-01', type: 'Change Agency Admin', agency: 'Ministry of Education', nominee: 'Karma Tenzin (102030)', status: 'Pending', date: '2024-03-12' },
-    { id: 'REQ-ADM-02', type: 'Add Sub-Admin', agency: 'Thimphu Thromde', nominee: 'Pema Lhamo (504030)', status: 'Approved', date: '2024-03-10' }
-];
-
-interface UserManagementPageProps {
-    userRole: UserRole;
-    onFileOnBehalf?: (officialName: string, officialId: string) => void;
-}
+interface UserManagementPageProps { userRole: UserRole; onFileOnBehalf?: (officialName: string, officialId: string) => void; }
 
 const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFileOnBehalf }) => {
+    // ... (State - Same as before) ...
     const [activeTab, setActiveTab] = useState<'Master List' | 'Admin Requests'>('Master List');
     const [officials, setOfficials] = useState<Official[]>(initialOfficials);
     const [adminRequests, setAdminRequests] = useState(initialRequests);
     const [searchQuery, setSearchQuery] = useState('');
     const [scheduleFilter, setScheduleFilter] = useState<'All' | 'Schedule I' | 'Schedule II'>('All');
     const [roleFilter, setRoleFilter] = useState<'All' | 'agency_admin' | 'hoa'>('All');
-    
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isRequestModalOpen, setRequestModalOpen] = useState(false);
     const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
     const [newUser, setNewUser] = useState({ id: '', name: '', email: '', designation: '', agency: '', schedule: 'Schedule II', role: 'user' });
     const [newRequest, setNewRequest] = useState({ type: 'Change Agency Admin', nomineeId: '', nomineeName: '', reason: '' });
-    const [registeredEmail, setRegisteredEmail] = useState(''); // Store email for success message
+    const [registeredEmail, setRegisteredEmail] = useState('');
 
+    // Filter Logic
     const filteredOfficials = officials.filter(official => {
-        if (userRole === 'agency_admin') {
-            if (official.agency !== 'Ministry of Finance') return false;
-        }
-        if (userRole === 'admin') {
-            if (scheduleFilter !== 'All' && official.schedule !== scheduleFilter) return false;
-            if (roleFilter !== 'All' && official.role !== roleFilter) return false;
-        }
+        if (userRole === 'agency_admin') { if (official.agency !== 'Ministry of Finance') return false; }
+        if (userRole === 'admin') { if (scheduleFilter !== 'All' && official.schedule !== scheduleFilter) return false; if (roleFilter !== 'All' && official.role !== roleFilter) return false; }
         const lowerSearch = searchQuery.toLowerCase();
-        return (
-            official.name.toLowerCase().includes(lowerSearch) ||
-            official.id.includes(lowerSearch) ||
-            official.designation.toLowerCase().includes(lowerSearch) ||
-            official.agency.toLowerCase().includes(lowerSearch)
-        );
+        return ( official.name.toLowerCase().includes(lowerSearch) || official.id.includes(lowerSearch) || official.designation.toLowerCase().includes(lowerSearch) || official.agency.toLowerCase().includes(lowerSearch) );
     });
 
-    const handleAddUser = (e: React.FormEvent) => {
-        e.preventDefault();
-        let finalSchedule = newUser.schedule as 'Schedule I' | 'Schedule II';
-        let finalAgency = newUser.agency;
-        let finalRole = newUser.role;
-
-        if (userRole === 'agency_admin') {
-            finalSchedule = 'Schedule II';
-            finalAgency = 'Ministry of Finance'; 
-            finalRole = 'user';
-        }
-
-        const newOfficial: Official = {
-            id: newUser.id,
-            name: newUser.name,
-            email: newUser.email,
-            designation: newUser.designation,
-            agency: finalAgency,
-            schedule: finalSchedule,
-            status: 'Active',
-            role: finalRole as any
-        };
-
-        setOfficials([...officials, newOfficial]);
-        setAddModalOpen(false);
-        setRegisteredEmail(newUser.email); // Capture email for message
-        setSuccessModalOpen(true);
-        
-        // Reset Form
-        setNewUser({ id: '', name: '', email: '', designation: '', agency: '', schedule: 'Schedule II', role: 'user' });
-    };
-
-    const handleSubmitRequest = (e: React.FormEvent) => { e.preventDefault(); const req = { id: `REQ-ADM-${Date.now().toString().slice(-3)}`, type: newRequest.type, agency: 'Ministry of Finance', nominee: `${newRequest.nomineeName} (${newRequest.nomineeId})`, status: 'Pending', date: new Date().toISOString().split('T')[0] }; setAdminRequests([req, ...adminRequests]); setRequestModalOpen(false); alert("Request submitted to ACC Admin for approval."); };
+    // Handlers
+    const handleAddUser = (e: React.FormEvent) => { e.preventDefault(); let finalSchedule = newUser.schedule as 'Schedule I' | 'Schedule II'; let finalAgency = newUser.agency; let finalRole = newUser.role; if (userRole === 'agency_admin') { finalSchedule = 'Schedule II'; finalAgency = 'Ministry of Finance'; finalRole = 'user'; } const newOfficial: Official = { id: newUser.id, name: newUser.name, email: newUser.email, designation: newUser.designation, agency: finalAgency, schedule: finalSchedule, status: 'Active', role: finalRole as any }; setOfficials([...officials, newOfficial]); setAddModalOpen(false); setRegisteredEmail(newUser.email); setSuccessModalOpen(true); setNewUser({ id: '', name: '', email: '', designation: '', agency: '', schedule: 'Schedule II', role: 'user' }); };
+    const handleSubmitRequest = (e: React.FormEvent) => { e.preventDefault(); const req = { id: `REQ-ADM-${Date.now().toString().slice(-3)}`, type: newRequest.type, agency: 'Ministry of Finance', nominee: `${newRequest.nomineeName} (${newRequest.nomineeId})`, status: 'Pending', date: new Date().toISOString().split('T')[0] }; setAdminRequests([req, ...adminRequests]); setRequestModalOpen(false); alert("Request submitted to CADA for approval."); };
     const handleApproveRequest = (id: string) => { setAdminRequests(adminRequests.map(r => r.id === id ? { ...r, status: 'Approved' } : r)); alert("Request Approved. User roles updated."); };
     const handleRejectRequest = (id: string) => { setAdminRequests(adminRequests.map(r => r.id === id ? { ...r, status: 'Rejected' } : r)); };
     const toggleStatus = (id: string) => { setOfficials(officials.map(off => off.id === id ? { ...off, status: off.status === 'Active' ? 'Inactive' : 'Active' } : off)); };
-    const promoteToAdmin = (id: string) => { if(confirm("Are you sure you want to promote this user to Agency Admin?")) { setOfficials(officials.map(off => off.id === id ? { ...off, role: 'agency_admin' } : off)); } }
+    const promoteToAdmin = (id: string) => { if(confirm("Are you sure you want to promote this user to ADA?")) { setOfficials(officials.map(off => off.id === id ? { ...off, role: 'agency_admin' } : off)); } }
 
     return (
         <div>
             {/* Success Modal (Email Notification) */}
             <Modal isOpen={isSuccessModalOpen} onClose={() => setSuccessModalOpen(false)} title="Registration Successful">
                 <div className="text-center p-6">
-                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                        <CheckIcon className="w-10 h-10 text-green-600"/>
-                    </div>
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4"><CheckIcon className="w-10 h-10 text-green-600"/></div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">User Registered</h3>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-                        <p className="text-sm text-blue-800 mb-2">
-                            An automated email containing the username and temporary password has been sent to:
-                        </p>
-                        <p className="text-lg font-mono font-bold text-blue-900 text-center">{registeredEmail}</p>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-4">
-                        The user will be prompted to change their password upon first login.
-                    </p>
-                    <div className="mt-6">
-                        <button onClick={() => setSuccessModalOpen(false)} className="w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark font-bold shadow-md">
-                            Close
-                        </button>
-                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left"><p className="text-sm text-blue-800 mb-2">An automated email containing the username and temporary password has been sent to:</p><p className="text-lg font-mono font-bold text-blue-900 text-center">{registeredEmail}</p></div>
+                    <p className="text-xs text-gray-500 mt-4">The user will be prompted to change their password upon first login.</p>
+                    <div className="mt-6"><button onClick={() => setSuccessModalOpen(false)} className="w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark font-bold shadow-md">Close</button></div>
                 </div>
             </Modal>
 
@@ -146,19 +69,13 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                         {userRole === 'admin' && (
                             <>
                                 <div><label className="block text-sm font-medium text-gray-700">Agency</label><input type="text" className="mt-1 w-full px-3 py-2 border rounded-md" value={newUser.agency} onChange={e => setNewUser({...newUser, agency: e.target.value})} /></div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Schedule Type</label>
-                                    <select className="mt-1 w-full px-3 py-2 border rounded-md" value={newUser.schedule} onChange={e => setNewUser({...newUser, schedule: e.target.value})}>
-                                        <option value="Schedule I">Schedule I</option>
-                                        <option value="Schedule II">Schedule II</option>
-                                    </select>
-                                </div>
+                                <div><label className="block text-sm font-medium text-gray-700">Schedule Type</label><select className="mt-1 w-full px-3 py-2 border rounded-md" value={newUser.schedule} onChange={e => setNewUser({...newUser, schedule: e.target.value})}><option value="Schedule I">Schedule I</option><option value="Schedule II">Schedule II</option></select></div>
                                 <div className="md:col-span-2 bg-blue-50 p-3 rounded border border-blue-100">
                                     <label className="block text-sm font-bold text-blue-900 mb-1">System Role Assignment</label>
                                     <select className="w-full px-3 py-2 border border-blue-200 rounded-md" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
                                         <option value="user">Declarant (Standard User)</option>
-                                        <option value="agency_admin">Agency Administrator</option>
-                                        <option value="hoa">Head of Agency (Executive)</option>
+                                        <option value="agency_admin">Asset Declaration Administrator (ADA)</option>
+                                        <option value="hoa">Head of Agency (HoA)</option>
                                     </select>
                                 </div>
                             </>
@@ -171,11 +88,11 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
             {/* Request Modal */}
             <Modal isOpen={isRequestModalOpen} onClose={() => setRequestModalOpen(false)} title="Request Administrative Change">
                 <form onSubmit={handleSubmitRequest} className="space-y-4">
-                    <p className="text-sm text-gray-600">Submit a request to ACC to update key agency roles.</p>
+                    <p className="text-sm text-gray-600">Submit a request to CADA to update key agency roles.</p>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Request Type</label>
                         <select className="mt-1 w-full px-3 py-2 border rounded-md" value={newRequest.type} onChange={e => setNewRequest({...newRequest, type: e.target.value})}>
-                            <option>Change Agency Admin</option>
+                            <option>Change Agency Admin (ADA)</option>
                             <option>Change Head of Agency (HoA)</option>
                             <option>Appoint Sub-Agency Admin</option>
                         </select>
@@ -209,7 +126,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                         <div className="flex gap-2 flex-wrap">
                             {userRole === 'admin' && (
                                 <>
-                                    <div className="bg-gray-100 rounded p-1 flex"> <button onClick={() => setRoleFilter('All')} className={`text-xs px-3 py-1.5 rounded ${roleFilter === 'All' ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>All Users</button> <button onClick={() => setRoleFilter('agency_admin')} className={`text-xs px-3 py-1.5 rounded ${roleFilter === 'agency_admin' ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>Agency Admins</button> <button onClick={() => setRoleFilter('hoa')} className={`text-xs px-3 py-1.5 rounded ${roleFilter === 'hoa' ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>HoA</button> </div>
+                                    <div className="bg-gray-100 rounded p-1 flex"> <button onClick={() => setRoleFilter('All')} className={`text-xs px-3 py-1.5 rounded ${roleFilter === 'All' ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>All Users</button> <button onClick={() => setRoleFilter('agency_admin')} className={`text-xs px-3 py-1.5 rounded ${roleFilter === 'agency_admin' ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>ADA (Admins)</button> <button onClick={() => setRoleFilter('hoa')} className={`text-xs px-3 py-1.5 rounded ${roleFilter === 'hoa' ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>HoA</button> </div>
                                     <div className="bg-gray-100 rounded p-1 flex"> {['All', 'Schedule I', 'Schedule II'].map(sch => ( <button key={sch} onClick={() => setScheduleFilter(sch as any)} className={`text-xs px-3 py-1.5 rounded ${scheduleFilter === sch ? 'bg-white shadow text-primary font-bold' : 'text-gray-500'}`}>{sch === 'All' ? 'All' : sch === 'Schedule I' ? 'Sch I' : 'Sch II'}</button> ))} </div>
                                 </>
                             )}
@@ -230,7 +147,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                                             <div className="text-xs text-text-secondary">ID: {official.id}</div>
                                         </td>
                                         <td className="py-4 px-6 text-sm">{official.designation}<br/><span className="text-xs text-gray-500">{official.agency}</span></td>
-                                        <td className="py-4 px-6"><span className={`px-2 py-1 rounded-full text-xs border ${official.role ? 'bg-purple-50 border-purple-200 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>{official.role === 'agency_admin' ? 'Agency Admin' : official.role === 'hoa' ? 'HoA' : 'Declarant'}</span></td>
+                                        <td className="py-4 px-6"><span className={`px-2 py-1 rounded-full text-xs border ${official.role ? 'bg-purple-50 border-purple-200 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>{official.role === 'agency_admin' ? 'ADA' : official.role === 'hoa' ? 'HoA' : 'Declarant'}</span></td>
                                         <td className="py-4 px-6"><span className={`px-2 py-1 text-xs font-bold rounded-full ${official.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>{official.status}</span></td>
                                         <td className="py-4 px-6 text-right flex justify-end gap-2">
                                             {onFileOnBehalf && official.status === 'Active' && (

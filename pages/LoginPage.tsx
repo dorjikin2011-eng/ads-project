@@ -16,8 +16,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const getRoleLabel = (role: UserRole) => {
       switch(role) {
-          case 'admin': return 'ACC Central Administration';
-          case 'agency_admin': return 'Agency Administration (Decentralized)';
+          case 'admin': return 'Central Asset Declaration Administrator (CADA)';
+          case 'agency_admin': return 'Asset Declaration Administrator (ADA)';
           case 'hoa': return 'Head of Agency (Executive)';
           default: return 'Public Official Declaration';
       }
@@ -25,9 +25,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const getRoleDescription = (role: UserRole) => {
       switch(role) {
-          case 'admin': return 'For Anti-Corruption Commission staff monitoring Schedule I declarations and Agency reports.';
-          case 'agency_admin': return 'For Agency Administrators managing Schedule II declarations and internal verification.';
-          case 'hoa': return 'For Head of Agency to review compliance reports and approve submission to ACC.';
+          case 'admin': return 'For CADA staff at Anti-Corruption Commission monitoring Schedule I declarations and Agency reports.';
+          case 'agency_admin': return 'For Agency ADAs managing Schedule II declarations and internal verification.';
+          case 'hoa': return 'For Head of Agency to review compliance reports and approve submission to CADA.';
           default: return 'For all Public Officials to file annual asset declarations.';
       }
   }
@@ -60,7 +60,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 onClick={() => setLoginType('agency_admin')}
                 className={`flex-1 px-2 py-2 text-xs font-medium border-t border-b border-r border-gray-200 hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'agency_admin' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
             >
-                Agency Admin
+                ADA (Agency)
             </button>
             <button
                 type="button"
@@ -74,7 +74,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 onClick={() => setLoginType('admin')}
                 className={`flex-1 px-2 py-2 text-xs font-medium border-t border-b border-r border-gray-200 rounded-tr-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'admin' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
             >
-                ACC Admin
+                CADA (ACC)
             </button>
           </div>
 

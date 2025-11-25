@@ -6,12 +6,13 @@ import SearchIcon from '../../components/icons/SearchIcon';
 import ShareIcon from '../../components/icons/ShareIcon';
 import Modal from '../../components/Modal';
 import DocumentIcon from '../../components/icons/DocumentIcon';
+import PlusIcon from '../../components/icons/PlusIcon';
 
 // --- Types & Mock Data ---
 
 interface AccessRequest {
     id: string;
-    department: string; // DoPS, DoI, DARe
+    department: string;
     requestorName: string;
     targetOfficial: string;
     targetId: string;
@@ -20,11 +21,12 @@ interface AccessRequest {
     requestDate: string;
     status: 'Pending' | 'Exported' | 'Denied';
     accessLevel: 'Excel Export';
+    sourceMode?: 'System' | 'Hard Copy' | 'Email';
 }
 
 interface OutboundForward {
     id: string;
-    targetDept: string; // IVS (DoPS), RAA
+    targetDept: string;
     title: string;
     dateSent: string;
     count: number;
@@ -33,9 +35,9 @@ interface OutboundForward {
 }
 
 const initialRequests: AccessRequest[] = [
-    { id: 'REQ-24-101', department: 'DoI (Investigation)', requestorName: 'Sr. Investigator Tashi', targetOfficial: 'Dasho Pema', targetId: '99887766', caseReference: 'CASE-2024-88', reason: 'Investigation of active case.', requestDate: '2024-03-10', status: 'Pending', accessLevel: 'Excel Export' },
-    { id: 'REQ-24-102', department: 'DoPS (Complaint Enrichment)', requestorName: 'Officer Karma', targetOfficial: 'H.E. Lyonpo Dorji', targetId: '11223344', caseReference: 'CE-2024-12', reason: 'Enrichment of complaint #123.', requestDate: '2024-03-09', status: 'Pending', accessLevel: 'Excel Export' },
-    { id: 'REQ-24-098', department: 'DARe (Intel Gathering)', requestorName: 'Analyst Ugyen', targetOfficial: 'Mr. Tashi Wangmo', targetId: '55667788', caseReference: 'INT-2023-55', reason: 'Intelligence gathering.', requestDate: '2024-03-01', status: 'Exported', accessLevel: 'Excel Export' },
+    { id: 'REQ-24-101', department: 'DoI (Investigation)', requestorName: 'Sr. Investigator Tashi', targetOfficial: 'Dasho Pema', targetId: '99887766', caseReference: 'CASE-2024-88', reason: 'Investigation of active case.', requestDate: '2024-03-10', status: 'Pending', accessLevel: 'Excel Export', sourceMode: 'System' },
+    { id: 'REQ-24-102', department: 'DoPS (Complaint Enrichment)', requestorName: 'Officer Karma', targetOfficial: 'H.E. Lyonpo Dorji', targetId: '11223344', caseReference: 'CE-2024-12', reason: 'Enrichment of complaint #123.', requestDate: '2024-03-09', status: 'Pending', accessLevel: 'Excel Export', sourceMode: 'Email' },
+    { id: 'REQ-24-098', department: 'DARe (Intel Gathering)', requestorName: 'Analyst Ugyen', targetOfficial: 'Mr. Tashi Wangmo', targetId: '55667788', caseReference: 'INT-2023-55', reason: 'Intelligence gathering.', requestDate: '2024-03-01', status: 'Exported', accessLevel: 'Excel Export', sourceMode: 'Hard Copy' },
 ];
 
 const initialOutbound: OutboundForward[] = [
@@ -51,11 +53,27 @@ const InfoSharingPage = () => {
     const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
     const [isActionModalOpen, setActionModalOpen] = useState(false);
     const [actionComment, setActionComment] = useState('');
+    
+    // Manual Log Modal State
+    const [isLogModalOpen, setLogModalOpen] = useState(false);
+    const [newLog, setNewLog] = useState({
+        sourceMode: 'Hard Copy',
+        department: 'DoI (Investigation)',
+        requestorName: '',
+        targetOfficial: '',
+        targetId: '',
+        reason: ''
+    });
 
     // Outbound State
     const [outboundLogs, setOutboundLogs] = useState<OutboundForward[]>(initialOutbound);
     const [isForwardModalOpen, setForwardModalOpen] = useState(false);
     const [forwardTarget, setForwardTarget] = useState('DoPS (IVS)');
+
+    // --- STATS CALCULATION (FIXED: Added missing variables) ---
+    const pendingCount = requests.filter(r => r.status === 'Pending').length;
+    const approvedCount = requests.filter(r => r.status === 'Exported').length;
+    const outboundCount = outboundLogs.length;
 
     // Handlers
     const handleActionClick = (req: AccessRequest) => {
@@ -92,12 +110,33 @@ const InfoSharingPage = () => {
         alert(`Excel list generated and logged as sent to ${forwardTarget}.`);
     };
 
+    const handleLogSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const newReq: AccessRequest = {
+            id: `MAN-REQ-${Math.floor(Math.random() * 1000)}`,
+            department: newLog.department,
+            requestorName: newLog.requestorName,
+            targetOfficial: newLog.targetOfficial,
+            targetId: newLog.targetId,
+            caseReference: 'MANUAL-LOG',
+            reason: newLog.reason,
+            requestDate: new Date().toISOString().split('T')[0],
+            status: 'Pending',
+            accessLevel: 'Excel Export',
+            sourceMode: newLog.sourceMode as any
+        };
+        setRequests([newReq, ...requests]);
+        setLogModalOpen(false);
+        setNewLog({ sourceMode: 'Hard Copy', department: 'DoI (Investigation)', requestorName: '', targetOfficial: '', targetId: '', reason: '' });
+    };
+
     return (
         <div>
             {/* Action Modal (Incoming) */}
             <Modal isOpen={isActionModalOpen} onClose={() => setActionModalOpen(false)} title="Process Data Request">
                 <div className="space-y-4">
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm">
+                        <p><strong>Source:</strong> <span className="bg-blue-100 text-blue-800 px-2 rounded text-xs">{selectedRequest?.sourceMode}</span></p>
                         <p><strong>Dept:</strong> {selectedRequest?.department}</p>
                         <p><strong>Target:</strong> {selectedRequest?.targetOfficial} ({selectedRequest?.targetId})</p>
                         <p><strong>Reason:</strong> {selectedRequest?.reason}</p>
@@ -111,6 +150,58 @@ const InfoSharingPage = () => {
                         <button onClick={() => processRequest('Exported')} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm flex items-center"><DocumentIcon className="w-4 h-4 mr-2" /> Export Excel & Close</button>
                     </div>
                 </div>
+            </Modal>
+
+            {/* Manual Log Modal */}
+            <Modal isOpen={isLogModalOpen} onClose={() => setLogModalOpen(false)} title="Log Manual Request">
+                <form onSubmit={handleLogSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Source Mode</label>
+                            <select className="w-full border rounded p-2 text-sm" value={newLog.sourceMode} onChange={(e) => setNewLog({...newLog, sourceMode: e.target.value})}>
+                                <option>Hard Copy</option>
+                                <option>Email</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
+                            <select className="w-full border rounded p-2 text-sm" value={newLog.department} onChange={(e) => setNewLog({...newLog, department: e.target.value})}>
+                                <option>DoI (Investigation)</option>
+                                <option>DoPS (Complaint Enrichment)</option>
+                                <option>DARe (Intel Gathering)</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Requestor Name & Designation</label>
+                        <input type="text" required className="w-full border rounded p-2 text-sm" value={newLog.requestorName} onChange={(e) => setNewLog({...newLog, requestorName: e.target.value})} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Target Official Name</label>
+                            <input type="text" required className="w-full border rounded p-2 text-sm" value={newLog.targetOfficial} onChange={(e) => setNewLog({...newLog, targetOfficial: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Target Official ID</label>
+                            <input type="text" required className="w-full border rounded p-2 text-sm" value={newLog.targetId} onChange={(e) => setNewLog({...newLog, targetId: e.target.value})} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Reason / Case Ref</label>
+                        <textarea className="w-full border rounded p-2 text-sm" rows={3} required value={newLog.reason} onChange={(e) => setNewLog({...newLog, reason: e.target.value})}></textarea>
+                    </div>
+                    
+                    <div className="border-t pt-4 mt-2">
+                        <label className="block text-xs font-bold text-gray-700 mb-2">Attach Scan/Screenshot (Optional)</label>
+                        <input type="file" className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setLogModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md text-sm">Cancel</button>
+                        <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md text-sm font-bold">Log Request</button>
+                    </div>
+                </form>
             </Modal>
 
             {/* Forward Modal (Outbound) */}
@@ -140,26 +231,47 @@ const InfoSharingPage = () => {
                 </div>
             </div>
 
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <DashboardCard title="Pending Inbound" value={pendingCount.toString()} subtitle="Access Requests" variant="warning" />
+                <DashboardCard title="Active Shares" value={approvedCount.toString()} subtitle="Authorized Access" variant="success" />
+                <DashboardCard title="Lists Forwarded" value={outboundCount.toString()} subtitle="Sent to Agencies" variant="primary" />
+            </div>
+
             {/* Main Content */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 {activeTab === 'Incoming' ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-100 border-b"><tr><th className="p-4 text-sm">Requestor</th><th className="p-4 text-sm">Target</th><th className="p-4 text-sm">Purpose</th><th className="p-4 text-sm">Status</th><th className="p-4 text-sm text-right">Action</th></tr></thead>
-                            <tbody className="divide-y">
-                                {requests.map((req) => (
-                                    <tr key={req.id} className="hover:bg-gray-50">
-                                        <td className="p-4 text-sm font-medium">{req.department}<br/><span className="text-xs text-gray-500">{req.requestorName}</span></td>
-                                        <td className="p-4 text-sm">{req.targetOfficial}</td>
-                                        <td className="p-4 text-sm">{req.reason}</td>
-                                        <td className="p-4"><span className={`text-xs px-2 py-1 rounded ${req.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{req.status}</span></td>
-                                        <td className="p-4 text-right">
-                                            {req.status === 'Pending' && <button onClick={() => handleActionClick(req)} className="text-blue-600 text-sm hover:underline">Process</button>}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="p-4">
+                        <div className="flex justify-end mb-4">
+                            <button 
+                                onClick={() => setLogModalOpen(true)} 
+                                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-bold shadow-sm"
+                            >
+                                <PlusIcon className="w-4 h-4 mr-2" /> Log Manual Request
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto border rounded-lg">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-100 border-b"><tr><th className="p-4 text-sm">Requestor</th><th className="p-4 text-sm">Target</th><th className="p-4 text-sm">Purpose</th><th className="p-4 text-sm">Status</th><th className="p-4 text-sm text-right">Action</th></tr></thead>
+                                <tbody className="divide-y">
+                                    {requests.map((req) => (
+                                        <tr key={req.id} className="hover:bg-gray-50">
+                                            <td className="p-4 text-sm font-medium">
+                                                {req.department}
+                                                <br/><span className="text-xs text-gray-500">{req.requestorName}</span>
+                                                {req.sourceMode && <span className="block mt-1 text-[10px] bg-gray-100 text-gray-600 px-1 rounded w-fit">{req.sourceMode}</span>}
+                                            </td>
+                                            <td className="p-4 text-sm">{req.targetOfficial}</td>
+                                            <td className="p-4 text-sm">{req.reason}</td>
+                                            <td className="p-4"><span className={`text-xs px-2 py-1 rounded ${req.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{req.status}</span></td>
+                                            <td className="p-4 text-right">
+                                                {req.status === 'Pending' && <button onClick={() => handleActionClick(req)} className="text-blue-600 text-sm hover:underline">Process</button>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 ) : (
                     <div className="p-4">

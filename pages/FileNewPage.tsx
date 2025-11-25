@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ProgressBar from '../components/ProgressBar';
 import PlusIcon from '../components/icons/PlusIcon';
 import TrashIcon from '../components/icons/TrashIcon';
@@ -9,250 +9,57 @@ import Modal from '../components/Modal';
 // --- Helper ---
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-// ... (KEEP ALL EXISTING INTERFACES EXACTLY AS BEFORE) ...
+// --- Types ---
 interface DocumentFile extends File { id: string; }
-// Page 2: Personal & Family
-interface PersonalInfo {
-    reason: 'Assumption of Office' | 'Annual Declaration' | 'Vacation of Office';
-    name: string;
-    cid: string;
-    dob: string;
-    sex: string;
-    maritalStatus: string;
-    permanentAddress: string; // Dzongkhag/Gewog/Village
-    employmentDetails: string; // EID, Agency, Position, Grade
-    contact: string; // Mobile/Email
-    spouseCovered: boolean;
-}
+// ... (Keep existing interfaces: PersonalInfo, FamilyMember, etc.) ...
+interface PersonalInfo { reason: 'Assumption of Office' | 'Annual Declaration' | 'Vacation of Office'; name: string; cid: string; dob: string; sex: string; maritalStatus: string; permanentAddress: string; employmentDetails: string; contact: string; spouseCovered: boolean; }
+interface FamilyMember { id: string; relationship: 'Spouse' | 'Child' | 'Dependent'; name: string; cid: string; dob: string; sex: string; maritalStatus: string; employment: string; contact: string; isCovered?: boolean; }
+interface AdditionalJob { id: string; relationship: string; name: string; cid: string; agency: string; positionTitle: string; incomeAmount: string; documents: DocumentFile[]; }
+interface PostEmployment { id: string; relationship: string; name: string; cid: string; newPosition: string; commercialActivity: string; offerAccepted: 'Yes' | 'No'; documents: DocumentFile[]; }
+interface ImmovableAsset { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: 'Land' | 'Building' | 'Flat' | 'House'; thramNo: string; plotNo: string; size: string; location: string; acquisitionDate: string; acquisitionMode: string; cost: string; sourceOfFinance: string; acquiredFrom: string; registeredOwner: string; documents: DocumentFile[]; }
+interface ShareStock { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; company: string; location: string; numberOfShares: string; transactionId: string; acquisitionDate: string; acquisitionMode: string; cost: string; sourceOfFinance: string; acquiredFrom: string; documents: DocumentFile[]; }
+interface Vehicle { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: string; make: string; registrationNo: string; model: string; acquisitionDate: string; acquisitionMode: string; cost: string; sourceOfFinance: string; acquiredFrom: string; registeredOwner: string; documents: DocumentFile[]; }
+interface VirtualAsset { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: string; qty: string; acquisitionDate: string; cost: string; sourceOfFinance: string; acquiredFrom: string; documents: DocumentFile[]; }
+interface PersonalSaving { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: 'Bank Deposit' | 'Cash in Hand' | 'Money Lent' | 'Foreign Exchange'; bankName: string; location: string; accountNumber: string; balance: string; source: string; documents: DocumentFile[]; }
+interface ConvertibleAsset { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: string; acquisitionDate: string; acquisitionMode: string; cost: string; sourceOfFinance: string; acquiredFrom: string; documents: DocumentFile[]; }
+interface CommercialActivity { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: string; licenseNo: string; location: string; operationStatus: string; acquisitionDate: string; acquisitionMode: string; cost: string; sourceOfFinance: string; acquiredFrom: string; documents: DocumentFile[]; }
+interface Income { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; salary: string; business: string; rental: string; dividends: string; hiringCharges: string; interest: string; cashCrop: string; tada: string; others: string; documents: DocumentFile[]; }
+interface Liability { id: string; ownerRelationship: string; ownerName: string; ownerCid: string; type: 'Bank Loan' | 'Private Borrowing'; sanctionedAmount: string; actualReceived: string; lenderDetails: string; borrowingDate: string; documents: DocumentFile[]; }
+interface EducationalExpense { id: string; relationship: string; name: string; amount: string; institution: string; courseLevel: string; documents: DocumentFile[]; }
+interface OtherExpense { id: string; category: 'Rental' | 'Insurance' | 'Loan Repayment' | 'Mandatory Deduction (PF/GIS/TDS)' | 'Travel' | 'Vacation' | 'Donation' | 'Medical' | 'Rituals' | 'Other'; details: string; amount: string; documents: DocumentFile[]; }
+type FormErrors = { [key: string]: { [key: string]: string } };
 
-interface FamilyMember {
-    id: string;
-    relationship: 'Spouse' | 'Child' | 'Dependent';
-    name: string;
-    cid: string;
-    dob: string;
-    sex: string;
-    maritalStatus: string;
-    employment: string;
-    contact: string;
-    isCovered?: boolean; // For spouse
-}
-
-// Page 3: Jobs
-interface AdditionalJob {
-    id: string;
-    relationship: string; // Self/Spouse/Child
-    name: string;
-    cid: string;
-    agency: string;
-    positionTitle: string;
-    incomeAmount: string;
-    documents: DocumentFile[];
-}
-
-interface PostEmployment {
-    id: string;
-    relationship: string;
-    name: string;
-    cid: string;
-    newPosition: string; // Agency/Title
-    commercialActivity: string;
-    offerAccepted: 'Yes' | 'No';
-    documents: DocumentFile[];
-}
-
-// Page 4: Immovable
-interface ImmovableAsset {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: 'Land' | 'Building' | 'Flat' | 'House';
-    thramNo: string;
-    plotNo: string;
-    size: string;
-    location: string;
-    acquisitionDate: string;
-    acquisitionMode: string; // Purchase/Inheritance/Gift
-    cost: string;
-    sourceOfFinance: string;
-    acquiredFrom: string; // Name & CID
-    registeredOwner: string; // Name & CID
-    documents: DocumentFile[];
-}
-
-// Page 5 & 6: Movable
-interface ShareStock {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    company: string;
-    location: string;
-    numberOfShares: string;
-    transactionId: string;
-    acquisitionDate: string;
-    acquisitionMode: string;
-    cost: string;
-    sourceOfFinance: string;
-    acquiredFrom: string;
-    documents: DocumentFile[];
-}
-
-interface Vehicle {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: string; // Car/Heavy Machinery
-    make: string;
-    registrationNo: string;
-    model: string;
-    acquisitionDate: string;
-    acquisitionMode: string;
-    cost: string;
-    sourceOfFinance: string;
-    acquiredFrom: string;
-    registeredOwner: string;
-    documents: DocumentFile[];
-}
-
-// Page 6, 7, 8: Other Assets
-interface VirtualAsset {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: string; // Bitcoin/Eth
-    qty: string;
-    acquisitionDate: string;
-    cost: string;
-    sourceOfFinance: string;
-    acquiredFrom: string;
-    documents: DocumentFile[];
-}
-
-interface PersonalSaving {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: 'Bank Deposit' | 'Cash in Hand' | 'Money Lent' | 'Foreign Exchange';
-    bankName: string;
-    location: string;
-    accountNumber: string; // Type of Account & Number
-    balance: string;
-    source: string;
-    documents: DocumentFile[];
-}
-
-interface ConvertibleAsset {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: string; // Gold/Jewelry/Art
-    acquisitionDate: string;
-    acquisitionMode: string;
-    cost: string;
-    sourceOfFinance: string;
-    acquiredFrom: string;
-    documents: DocumentFile[];
-}
-
-interface CommercialActivity {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: string; // Business/IP
-    licenseNo: string;
-    location: string;
-    operationStatus: string;
-    acquisitionDate: string;
-    acquisitionMode: string;
-    cost: string;
-    sourceOfFinance: string;
-    acquiredFrom: string;
-    documents: DocumentFile[];
-}
-
-// Page 9: Income & Liability
-interface Income {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    salary: string;
-    business: string;
-    rental: string;
-    dividends: string;
-    hiringCharges: string;
-    interest: string;
-    cashCrop: string;
-    tada: string;
-    others: string;
-    documents: DocumentFile[];
-}
-
-interface Liability {
-    id: string;
-    ownerRelationship: string;
-    ownerName: string;
-    ownerCid: string;
-    type: 'Bank Loan' | 'Private Borrowing';
-    sanctionedAmount: string;
-    actualReceived: string;
-    lenderDetails: string; // Bank Name or Individual Name/CID
-    borrowingDate: string;
-    documents: DocumentFile[];
-}
-
-// Page 10 & 11: Expenditure
-interface EducationalExpense {
-    id: string;
-    relationship: string;
-    name: string;
-    amount: string;
-    institution: string; // School/College
-    courseLevel: string;
-    documents: DocumentFile[];
-}
-
-interface OtherExpense {
-    id: string;
-    category: 'Rental' | 'Insurance' | 'Loan Repayment' | 'Mandatory Deduction (PF/GIS/TDS)' | 'Travel' | 'Vacation' | 'Donation' | 'Medical' | 'Rituals' | 'Other';
-    details: string;
-    amount: string;
-    documents: DocumentFile[];
-}
-
-// ... (KEEP Reusable Components: SectionHeader, FormInput, FormSelect, FileUpload, ItemCard EXACTLY AS BEFORE) ...
+// ... (Reusable Components: SectionHeader, FormInput, FormSelect, FileUpload, ItemCard - Keep same) ...
 const SectionHeader = ({ title, subtitle }: { title: string, subtitle?: string }) => ( <div className="mb-6 border-b pb-2"> <h2 className="text-xl font-bold text-primary-dark">{title}</h2> {subtitle && <p className="text-sm text-text-secondary mt-1">{subtitle}</p>} </div> );
 const FormInput = ({ label, id, ...props }: any) => ( <div> <label htmlFor={id} className="block text-xs font-semibold text-text-secondary mb-1 uppercase">{label}</label> <input id={id} {...props} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-transparent" /> </div> );
 const FormSelect = ({ label, id, children, ...props }: any) => ( <div> <label htmlFor={id} className="block text-xs font-semibold text-text-secondary mb-1 uppercase">{label}</label> <select id={id} {...props} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-white"> {children} </select> </div> );
 const FileUpload = ({ documents, onFileChange, onFileRemove }: { documents: DocumentFile[], onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void, onFileRemove: (fileId: string) => void }) => { const fileInputRef = useRef<HTMLInputElement>(null); return ( <div className="mt-3 pt-3 border-t border-dashed border-gray-200"> <div className="flex flex-wrap gap-2 mb-2"> {documents.map(file => ( <span key={file.id} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700"> {file.name} <button type="button" onClick={() => onFileRemove(file.id)} className="ml-1 text-blue-400 hover:text-blue-600"><TrashIcon className="w-3 h-3" /></button> </span> ))} </div> <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center text-xs font-medium text-accent hover:text-primary"> <PaperClipIcon className="w-4 h-4 mr-1" /> Attach Evidence </button> <input type="file" multiple ref={fileInputRef} onChange={onFileChange} className="hidden" /> </div> ); };
 const ItemCard = ({ title, onRemove, children }: { title: string, onRemove: () => void, children: React.ReactNode }) => ( <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 relative"> <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2"> <h4 className="text-sm font-bold text-gray-700">{title}</h4> <button onClick={onRemove} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"><TrashIcon className="w-4 h-4" /></button> </div> <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {children} </div> </div> );
 
-// --- MAIN COMPONENT ---
 
-const FileNewPage = () => {
-    const steps = [
-        "Guidelines", "Personal Info", "Family Details", "Employment", 
-        "Immovable Assets", "Movable Assets", "Other Assets", 
-        "Income & Liabilities", "Expenditure", "Affidavit"
-    ];
+// --- PROPS ---
+interface FileNewPageProps {
+    isProcessingForAdmin?: boolean;
+    targetOfficialName?: string;
+    targetOfficialId?: string;
+}
+
+const FileNewPage: React.FC<FileNewPageProps> = ({ isProcessingForAdmin = false, targetOfficialName, targetOfficialId }) => {
+    const steps = [ "Guidelines", "Personal Info", "Family Details", "Employment", "Immovable Assets", "Movable Assets", "Other Assets", "Income & Liabilities", "Expenditure", "Affidavit" ];
     const [currentStep, setCurrentStep] = useState(0);
     const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-    const [isAffidavitModalOpen, setAffidavitModalOpen] = useState(false);
     const [isPreviewModalOpen, setPreviewModalOpen] = useState(false);
     const [affidavitAgreed, setAffidavitAgreed] = useState(false);
+    const [hardCopyFile, setHardCopyFile] = useState<File | null>(null);
 
-    // --- DATA STATES (Keep initialized as before) ---
+    // --- DATA STATES ---
     const [personal, setPersonal] = useState<PersonalInfo>({
-        reason: 'Annual Declaration', name: 'Kinley Wangchuk', cid: '12345', dob: '1985-06-15', sex: 'Male', 
-        maritalStatus: 'Married', permanentAddress: 'Thimphu', employmentDetails: 'Rev. Officer', contact: '17123456', spouseCovered: false
+        reason: 'Annual Declaration', 
+        name: targetOfficialName || 'Kinley Wangchuk', 
+        cid: targetOfficialId || '12345', 
+        dob: '1985-06-15', sex: 'Male', maritalStatus: 'Married', permanentAddress: 'Thimphu', employmentDetails: 'Rev. Officer', contact: '17123456', spouseCovered: false
     });
+    // (Other states same as before)
     const [family, setFamily] = useState<FamilyMember[]>([]);
     const [addJobs, setAddJobs] = useState<AdditionalJob[]>([]);
     const [postJobs, setPostJobs] = useState<PostEmployment[]>([]);
@@ -268,7 +75,7 @@ const FileNewPage = () => {
     const [eduExp, setEduExp] = useState<EducationalExpense[]>([]);
     const [otherExp, setOtherExp] = useState<OtherExpense[]>([]);
 
-    // --- HELPERS (Keep getRelationOptions and generic handlers) ---
+    // --- HELPERS (Same as before) ---
     const getRelationOptions = () => ( <> <option value="Self">Self ({personal.name})</option> {family.map(f => <option key={f.id} value={f.relationship}>{f.relationship} ({f.name})</option>)} </> );
     const handleAdd = (setter: any, initial: any) => { setter((prev: any) => [...prev, { ...initial, id: generateId(), documents: [] }]); };
     const handleRemove = (setter: any, id: string) => { setter((prev: any) => prev.filter((i: any) => i.id !== id)); };
@@ -276,7 +83,7 @@ const FileNewPage = () => {
     const handleFile = (setter: any, id: string, e: any) => { if(e.target.files) { const files = Array.from(e.target.files).map((f: any) => Object.assign(f, {id: generateId()})); setter((prev: any) => prev.map((i: any) => i.id === id ? {...i, documents: [...i.documents, ...files]} : i)); } };
     const handleFileRemove = (setter: any, itemId: string, fileId: string) => { setter((prev: any) => prev.map((i: any) => i.id === itemId ? {...i, documents: i.documents.filter((d: any) => d.id !== fileId)} : i)); };
 
-    // --- STEP RENDERERS (Keep 1-8 same, Update 9 for Preview) ---
+    // --- RENDERERS (1-8 Same) ---
     const renderPersonalInfo = () => ( <div> <SectionHeader title="Reason for Declaration" subtitle="Select the appropriate type" /> <div className="mb-6 bg-blue-50 p-4 rounded-md"> <div className="flex gap-6"> {['Assumption of Office', 'Annual Declaration', 'Vacation of Office'].map(type => ( <label key={type} className="flex items-center cursor-pointer"> <input type="radio" name="reason" checked={personal.reason === type} onChange={() => setPersonal({...personal, reason: type as any})} className="h-4 w-4 text-primary focus:ring-primary" /> <span className="ml-2 text-sm font-medium text-gray-700">{type}</span> </label> ))} </div> </div> <SectionHeader title="Details of Declarant" subtitle="Your personal information as per records" /> <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> <FormInput label="Name" id="p_name" value={personal.name} onChange={(e:any) => setPersonal({...personal, name: e.target.value})} /> <FormInput label="CID / Work Permit" id="p_cid" value={personal.cid} onChange={(e:any) => setPersonal({...personal, cid: e.target.value})} /> <FormInput label="Date of Birth" id="p_dob" type="date" value={personal.dob} onChange={(e:any) => setPersonal({...personal, dob: e.target.value})} /> <FormInput label="Sex" id="p_sex" value={personal.sex} onChange={(e:any) => setPersonal({...personal, sex: e.target.value})} /> <FormInput label="Marital Status" id="p_status" value={personal.maritalStatus} onChange={(e:any) => setPersonal({...personal, maritalStatus: e.target.value})} /> <FormInput label="Permanent Address" id="p_addr" placeholder="Dzongkhag, Gewog, Village" value={personal.permanentAddress} onChange={(e:any) => setPersonal({...personal, permanentAddress: e.target.value})} /> <FormInput label="Employment Details" id="p_emp" placeholder="EID, Agency, Position, Level" value={personal.employmentDetails} onChange={(e:any) => setPersonal({...personal, employmentDetails: e.target.value})} /> <FormInput label="Contact Details" id="p_contact" placeholder="Mobile / Email" value={personal.contact} onChange={(e:any) => setPersonal({...personal, contact: e.target.value})} /> <div className="md:col-span-3 mt-2 p-3 bg-gray-100 rounded"> <label className="flex items-center"> <input type="checkbox" checked={personal.spouseCovered} onChange={(e) => setPersonal({...personal, spouseCovered: e.target.checked})} className="h-4 w-4 text-primary rounded" /> <span className="ml-2 text-sm font-bold text-gray-800">Is your spouse also a covered person (Public Official)?</span> </label> </div> </div> </div> );
     const renderFamily = () => ( <div> <SectionHeader title="Family Details" subtitle="Spouse, Children and Dependents" /> <div className="space-y-4"> {family.map((mem) => ( <ItemCard key={mem.id} title={`${mem.relationship}: ${mem.name}`} onRemove={() => handleRemove(setFamily, mem.id)}> <FormSelect label="Relationship" value={mem.relationship} onChange={(e:any) => handleChange(setFamily, mem.id, 'relationship', e.target.value)}> <option>Spouse</option><option>Child</option><option>Dependent</option> </FormSelect> <FormInput label="Name" value={mem.name} onChange={(e:any) => handleChange(setFamily, mem.id, 'name', e.target.value)} /> <FormInput label="CID / Permit No" value={mem.cid} onChange={(e:any) => handleChange(setFamily, mem.id, 'cid', e.target.value)} /> <FormInput label="Date of Birth" type="date" value={mem.dob} onChange={(e:any) => handleChange(setFamily, mem.id, 'dob', e.target.value)} /> <FormInput label="Marital Status" value={mem.maritalStatus} onChange={(e:any) => handleChange(setFamily, mem.id, 'maritalStatus', e.target.value)} /> <FormInput label="Employment Details" placeholder="Agency, Position" value={mem.employment} onChange={(e:any) => handleChange(setFamily, mem.id, 'employment', e.target.value)} /> </ItemCard> ))} <button onClick={() => handleAdd(setFamily, {relationship: 'Spouse', name: '', cid: '', dob: '', employment: ''})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Family Member</button> </div> </div> );
     const renderEmployment = () => ( <div className="space-y-8"> <div> <SectionHeader title="Additional Job / Employment" subtitle="Apart from current office (Paid or Unpaid)" /> {addJobs.map(job => ( <ItemCard key={job.id} title="Additional Job" onRemove={() => handleRemove(setAddJobs, job.id)}> <FormSelect label="Relationship" value={job.relationship} onChange={(e:any) => handleChange(setAddJobs, job.id, 'relationship', e.target.value)}>{getRelationOptions()}</FormSelect> <FormInput label="Agency / Organization" value={job.agency} onChange={(e:any) => handleChange(setAddJobs, job.id, 'agency', e.target.value)} /> <FormInput label="Position Title" value={job.positionTitle} onChange={(e:any) => handleChange(setAddJobs, job.id, 'positionTitle', e.target.value)} /> <FormInput label="Income (Amount)" value={job.incomeAmount} onChange={(e:any) => handleChange(setAddJobs, job.id, 'incomeAmount', e.target.value)} /> </ItemCard> ))} <button onClick={() => handleAdd(setAddJobs, {relationship: 'Self', agency: '', positionTitle: '', incomeAmount: ''})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Job</button> </div> <div> <SectionHeader title="Post-Employment Arrangement" subtitle="Plans after separation from current office" /> {postJobs.map(job => ( <ItemCard key={job.id} title="Post-Employment Plan" onRemove={() => handleRemove(setPostJobs, job.id)}> <FormSelect label="Relationship" value={job.relationship} onChange={(e:any) => handleChange(setPostJobs, job.id, 'relationship', e.target.value)}>{getRelationOptions()}</FormSelect> <FormInput label="New Position / Agency" value={job.newPosition} onChange={(e:any) => handleChange(setPostJobs, job.id, 'newPosition', e.target.value)} /> <FormInput label="Commercial Activity" value={job.commercialActivity} onChange={(e:any) => handleChange(setPostJobs, job.id, 'commercialActivity', e.target.value)} /> <FormSelect label="Offer Accepted?" value={job.offerAccepted} onChange={(e:any) => handleChange(setPostJobs, job.id, 'offerAccepted', e.target.value)}><option>Yes</option><option>No</option></FormSelect> </ItemCard> ))} <button onClick={() => handleAdd(setPostJobs, {relationship: 'Self', newPosition: '', commercialActivity: '', offerAccepted: 'No'})} className="flex items-center text-primary font-bold text-sm"><PlusIcon className="w-5 h-5 mr-1" /> Add Plan</button> </div> </div> );
@@ -301,13 +108,42 @@ const FileNewPage = () => {
 
             <h2 className="text-xl font-bold">Sworn Affidavit</h2>
             <div className="bg-yellow-50 border border-yellow-200 p-6 text-left text-sm text-gray-700 rounded-lg space-y-4">
-                <p>I swear or affirm that all the information that I have given here is true, correct and complete to the best of my knowledge, information and belief.</p>
-                <p>I understand that I shall be liable as per section 64 of ACAB 2011, if I have intentionally given false information. I also know that I may be asked to show proof of any information I have given.</p>
-                <p>I also hereby authorize the Commission or its duly authorized agency to obtain and secure from all appropriate agencies, including the Department of Revenue and Customs, such documents that may show such income, assets, and liabilities.</p>
+                {/* ADMIN MODE NOTICE */}
+                {isProcessingForAdmin ? (
+                    <div className="font-bold text-red-600 uppercase mb-2">
+                        ADMINISTRATIVE FILING: HARD COPY UPLOAD REQUIRED
+                    </div>
+                ) : (
+                    <p>I swear or affirm that all the information that I have given here is true, correct and complete...</p>
+                )}
+                
+                {/* HARD COPY UPLOAD FIELD FOR ADMINS */}
+                {isProcessingForAdmin && (
+                    <div className="mt-4 border-t border-yellow-300 pt-4">
+                        <label className="block font-bold text-gray-800 mb-2">Upload Signed Hard Copy (PDF/Image)</label>
+                        <div className="flex items-center">
+                            <input 
+                                type="file" 
+                                onChange={(e) => setHardCopyFile(e.target.files ? e.target.files[0] : null)}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark"
+                            />
+                        </div>
+                        {!hardCopyFile && <p className="text-red-500 text-xs mt-1">Hard copy upload is mandatory for admin filing.</p>}
+                    </div>
+                )}
             </div>
+            
             <label className="flex items-center justify-center mt-6 space-x-2 cursor-pointer">
-                <input type="checkbox" checked={affidavitAgreed} onChange={(e) => setAffidavitAgreed(e.target.checked)} className="w-5 h-5 text-primary rounded focus:ring-primary" />
-                <span className="font-bold text-gray-900">I AGREE TO THE ABOVE AFFIDAVIT</span>
+                <input 
+                    type="checkbox" 
+                    checked={affidavitAgreed} 
+                    onChange={(e) => setAffidavitAgreed(e.target.checked)} 
+                    className="w-5 h-5 text-primary rounded focus:ring-primary" 
+                    disabled={isProcessingForAdmin && !hardCopyFile} // Disable check if hard copy missing in admin mode
+                />
+                <span className="font-bold text-gray-900">
+                    {isProcessingForAdmin ? "I certify I have uploaded the original signed declaration." : "I AGREE TO THE ABOVE AFFIDAVIT"}
+                </span>
             </label>
         </div>
     );
@@ -316,7 +152,15 @@ const FileNewPage = () => {
         switch (currentStep) {
             case 0: return (
                 <div className="prose text-sm text-gray-600">
-                    <h2 className="text-xl font-bold text-primary mb-4">Important Information</h2>
+                    <h2 className="text-xl font-bold text-primary mb-4">
+                        {isProcessingForAdmin ? `Filing on Behalf of: ${targetOfficialName}` : "Important Information"}
+                    </h2>
+                    {isProcessingForAdmin && (
+                         <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                            <p className="font-bold text-red-700">Admin Mode Active</p>
+                            <p>You are submitting this declaration on behalf of another official. You must upload the signed hard copy at the final step.</p>
+                        </div>
+                    )}
                     <ul className="list-disc pl-5 space-y-2">
                         <li><strong>Why file?</strong> As per section 38(1) of ACAB 2011, to promote transparency.</li>
                         <li><strong>What to file?</strong> Assets, Income, and Liabilities of yourself, spouse, and dependents.</li>
@@ -340,7 +184,10 @@ const FileNewPage = () => {
     const handleNext = () => {
         setCompletedSteps(prev => new Set(prev).add(steps[currentStep]));
         if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
-        else if (currentStep === steps.length - 1 && affidavitAgreed) alert("Declaration Submitted Successfully!");
+        else if (currentStep === steps.length - 1 && affidavitAgreed) {
+             alert(isProcessingForAdmin ? `Declaration for ${targetOfficialName} submitted by Admin successfully!` : "Declaration Submitted Successfully!");
+             // Redirect logic would go here
+        }
     };
 
     const handleBack = () => {

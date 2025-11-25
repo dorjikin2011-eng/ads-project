@@ -12,24 +12,74 @@ import PaymentPage from './PaymentPage';
 import WhistleblowingPage from './WhistleblowingPage';
 import ContactPage from './ContactPage';
 import DocumentIcon from '../components/icons/DocumentIcon';
+import Modal from '../components/Modal'; // Ensure Modal is imported
 
 interface DashboardPageProps {
   onLogout: () => void;
 }
 
 const mockDeclarations: Declaration[] = [
-  { year: 2023, type: 'Vacation of Office', submissionDate: '2024-03-15', status: DeclarationStatus.APPROVED }, // Approved Vacation
-  { year: 2022, type: 'Annual', submissionDate: '2023-03-01', status: DeclarationStatus.APPROVED },
-  { year: 2021, type: 'Annual', submissionDate: '2022-02-20', status: DeclarationStatus.APPROVED },
-  { year: 2020, type: 'New Entrant', submissionDate: '2021-01-10', status: DeclarationStatus.APPROVED },
+  { id: 'DEC-001', year: 2023, type: 'Vacation of Office', submissionDate: '2024-03-15', status: DeclarationStatus.APPROVED },
+  { id: 'DEC-002', year: 2022, type: 'Annual', submissionDate: '2023-03-01', status: DeclarationStatus.APPROVED },
+  { id: 'DEC-003', year: 2021, type: 'Annual', submissionDate: '2022-02-20', status: DeclarationStatus.APPROVED },
+  { id: 'DEC-004', year: 2020, type: 'New Entrant', submissionDate: '2021-01-10', status: DeclarationStatus.APPROVED },
 ];
 
 const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => void }) => {
-    // Check if latest declaration is a cleared Vacation of Office
     const isCleared = mockDeclarations[0].type === 'Vacation of Office' && mockDeclarations[0].status === DeclarationStatus.APPROVED;
+    
+    // Amendment Modal State
+    const [isAmendmentModalOpen, setAmendmentModalOpen] = useState(false);
+    const [amendmentReason, setAmendmentReason] = useState('');
+    const [targetDeclaration, setTargetDeclaration] = useState<Declaration | null>(null);
+
+    const handleRequestAmendment = (decl: Declaration) => {
+        setTargetDeclaration(decl);
+        setAmendmentReason('');
+        setAmendmentModalOpen(true);
+    };
+
+    const submitAmendmentRequest = () => {
+        alert(`Amendment Requested for ${targetDeclaration?.year} Declaration.\nReason: ${amendmentReason}\n\nStatus updated to 'Pending Amendment Approval'.`);
+        setAmendmentModalOpen(false);
+    };
 
     return (
       <>
+        {/* Amendment Modal */}
+        <Modal
+            isOpen={isAmendmentModalOpen}
+            onClose={() => setAmendmentModalOpen(false)}
+            title="Request Amendment"
+        >
+            <div className="space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded text-sm text-yellow-800">
+                    <strong>Note:</strong> Approved declarations are locked. Requesting an amendment requires administrative approval. 
+                    Once approved, you will be able to edit your submission.
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Amendment</label>
+                    <textarea 
+                        className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-primary focus:border-primary"
+                        rows={4}
+                        placeholder="e.g., Forgot to declare fixed deposit account..."
+                        value={amendmentReason}
+                        onChange={(e) => setAmendmentReason(e.target.value)}
+                    ></textarea>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                    <button onClick={() => setAmendmentModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm">Cancel</button>
+                    <button 
+                        onClick={submitAmendmentRequest} 
+                        disabled={!amendmentReason}
+                        className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-bold text-sm disabled:opacity-50"
+                    >
+                        Submit Request
+                    </button>
+                </div>
+            </div>
+        </Modal>
+
         <h1 className="text-3xl font-bold text-text-main mb-2">Welcome Back, Kinley!</h1>
         <p className="text-text-secondary mb-8">Here's a summary of your asset declaration status.</p>
 
@@ -96,7 +146,27 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
               </thead>
               <tbody>
                 {mockDeclarations.slice(0, 3).map(declaration => (
-                  <DeclarationRow key={declaration.year} declaration={declaration} />
+                  <tr key={declaration.year} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="py-4 px-4 text-text-main">{declaration.year}</td>
+                      <td className="py-4 px-4 text-text-main">{declaration.type}</td>
+                      <td className="py-4 px-4 text-text-secondary">{declaration.submissionDate}</td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full inline-block ${
+                            declaration.status === DeclarationStatus.APPROVED ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                        }`}>{declaration.status}</span>
+                      </td>
+                      <td className="py-4 px-4 flex space-x-3">
+                        <button className="text-blue-600 hover:underline font-medium text-sm">View</button>
+                        {declaration.status === DeclarationStatus.APPROVED && (
+                            <button 
+                                onClick={() => handleRequestAmendment(declaration)}
+                                className="text-orange-600 hover:underline font-medium text-sm"
+                            >
+                                Request Amendment
+                            </button>
+                        )}
+                      </td>
+                  </tr>
                 ))}
               </tbody>
             </table>

@@ -100,8 +100,7 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
             return d.schedule === 'Schedule II';
         }
         if (userRole === 'admin') {
-            // ACC Admin sees all (unless filtered), but for Amendments, they technically only approve Sch I.
-            // However, they might want visibility. Let's filter by Schedule toggle.
+            // ACC Admin sees all (unless filtered)
             if (scheduleFilter === 'All') return true;
             return d.schedule === scheduleFilter;
         }
@@ -117,14 +116,13 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
     const handlePenaltySubmit = () => { alert(`Penalty Imposed.`); setPenaltyModalOpen(false); };
     const handleReturnSubmit = () => { alert(`Returned to ${selected?.name}. Reason: ${returnReason}`); setReturnModalOpen(false); };
     
-    // --- AMENDMENT APPROVAL LOGIC ---
+    // --- AMENDMENT APPROVAL LOGIC UPDATE ---
     const handleApproveAmendment = () => {
         if (selected?.schedule === 'Schedule II') {
-            if (userRole === 'agency_admin') {
-                 alert(`Amendment Request for ${selected.name} (Schedule II) APPROVED by Agency Admin.\nStatus: Open for Editing.`);
-                 // In real app: API call to unlock
+            if (userRole === 'agency_admin' || userRole === 'admin') { // ACC Admin can also approve Sch II
+                 alert(`Amendment Request for ${selected.name} (Schedule II) APPROVED.\nApprover: ${userRole === 'admin' ? 'ACC Admin' : 'Agency Admin'}.\nStatus: Open for Editing.`);
             } else {
-                alert("Note: Typically Agency Admins handle Schedule II amendments, but ACC override is permitted.");
+                alert("Error: Access Denied.");
             }
         } else if (selected?.schedule === 'Schedule I') {
             if (userRole === 'admin') {

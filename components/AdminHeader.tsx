@@ -90,6 +90,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                            
                            <NavLink icon={<ChartBarIcon />} label="Analytics" page="analytics" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Reports" page="reports" activePage={activePage} setActivePage={setActivePage} />
+                           
+                           {/* Audit Logs */}
                            <NavLink icon={<HistoryIcon />} label="Audit Logs" page="audit" activePage={activePage} setActivePage={setActivePage} />
                         </ul>
                     </nav>
@@ -107,8 +109,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                                     {userRole === 'admin' ? 'AC' : 'AA'}
                                 </div>
                                 <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-text-main">{userRole === 'admin' ? 'CADA Officer' : 'ADA Officer'}</p>
-                                    <p className="text-xs text-text-secondary">{userRole === 'admin' ? 'Head Office' : 'Ministry of Finance'}</p>
+                                    <p className="text-sm font-semibold text-text-main">{userRole === 'admin' ? 'CADA' : 'ADA'}</p>
+                                    <p className="text-xs text-text-secondary">{userRole === 'admin' ? 'Head Office' : 'Agency Admin'}</p>
                                 </div>
                             </button>
                             {profileOpen && (

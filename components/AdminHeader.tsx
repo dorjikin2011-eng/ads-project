@@ -11,6 +11,7 @@ import UserGroupIcon from './icons/UserGroupIcon';
 import BanknotesIcon from './icons/BanknotesIcon';
 import ShareIcon from './icons/ShareIcon';
 import ServerIcon from './icons/ServerIcon';
+import HistoryIcon from './icons/HistoryIcon'; // Import HistoryIcon
 import { UserRole } from '../types';
 
 interface AdminHeaderProps {
@@ -72,12 +73,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                            <NavLink icon={<UserGroupIcon />} label="Declarants" page="users" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<ClipboardCheckIcon />} label="Verification" page="verification" activePage={activePage} setActivePage={setActivePage} />
                            
-                           {/* Payments: Available for both Admin and Agency Admin */}
+                           {/* Payments */}
                            {(userRole === 'admin' || userRole === 'agency_admin') && (
                                <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
                            )}
 
-                           {/* Exclusive ACC Admin Features */}
+                           {/* ACC Only */}
                            {userRole === 'admin' && (
                                <>
                                    <NavLink icon={<ScaleIcon />} label="DA Cases" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
@@ -88,6 +89,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                            
                            <NavLink icon={<ChartBarIcon />} label="Analytics" page="analytics" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Reports" page="reports" activePage={activePage} setActivePage={setActivePage} />
+                           
+                           {/* Audit Logs (New) */}
+                           <NavLink icon={<HistoryIcon />} label="Audit Logs" page="audit" activePage={activePage} setActivePage={setActivePage} />
                         </ul>
                     </nav>
 

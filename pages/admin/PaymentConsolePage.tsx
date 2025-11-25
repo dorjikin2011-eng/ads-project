@@ -40,6 +40,7 @@ const PaymentConsolePage = () => {
     const [isPayModalOpen, setPayModalOpen] = useState(false);
     const [selectedCase, setSelectedCase] = useState<PenaltyCase | null>(null);
     const [paymentReference, setPaymentReference] = useState('');
+    const [paymentMode, setPaymentMode] = useState('Cash Deposit'); // NEW: Payment Mode
 
     // Forward Modal State
     const [isForwardModalOpen, setForwardModalOpen] = useState(false);
@@ -73,6 +74,7 @@ const PaymentConsolePage = () => {
     const openPaymentModal = (item: PenaltyCase) => {
         setSelectedCase(item);
         setPaymentReference('');
+        setPaymentMode('Cash Deposit'); // Reset to default
         setPayModalOpen(true);
     };
 
@@ -80,7 +82,7 @@ const PaymentConsolePage = () => {
         if (selectedCase) {
             setCases(cases.map(c => c.id === selectedCase.id ? { ...c, status: 'Paid' } : c));
             setPayModalOpen(false);
-            alert(`Payment Recorded Successfully!\nRef: ${paymentReference}\nAmount: ${formatCurrency(selectedCase.fineAmount)}`);
+            alert(`Payment Successfully Recorded on Behalf of ${selectedCase.officialName}!\n\nAmount: ${formatCurrency(selectedCase.fineAmount)}\nMode: ${paymentMode}\nRef: ${paymentReference}`);
         }
     };
 
@@ -167,11 +169,11 @@ const PaymentConsolePage = () => {
                 </div>
             </Modal>
 
-            {/* Payment Modal */}
+            {/* Payment Modal - ENHANCED for "On Behalf" */}
             <Modal 
                 isOpen={isPayModalOpen} 
                 onClose={() => setPayModalOpen(false)} 
-                title="Record Penalty Payment"
+                title="Make Payment (On Behalf)"
             >
                 {selectedCase && (
                     <div className="space-y-4">
@@ -191,14 +193,32 @@ const PaymentConsolePage = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Payment Reference / Receipt No.</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Payment Mode</label>
+                            <select 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                                value={paymentMode}
+                                onChange={(e) => setPaymentMode(e.target.value)}
+                            >
+                                <option>Cash Deposit (at ACC Office)</option>
+                                <option>Cheque</option>
+                                <option>Direct Bank Transfer (Manual Verify)</option>
+                                <option>Salary Deduction</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Receipt No. / Reference</label>
                             <input 
                                 type="text" 
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                                placeholder="e.g., BOB-TRX-123456"
+                                placeholder="e.g., RCPT-889900"
                                 value={paymentReference}
                                 onChange={(e) => setPaymentReference(e.target.value)}
                             />
+                        </div>
+                        
+                        <div className="bg-yellow-50 p-2 text-xs text-yellow-800 rounded border border-yellow-100">
+                            <strong>Note:</strong> You are recording a payment on behalf of the declarant. This action is final and will clear the pending status.
                         </div>
 
                         <div className="flex justify-end space-x-3 pt-4">
@@ -209,7 +229,7 @@ const PaymentConsolePage = () => {
                                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                             >
                                 <CheckIcon /> 
-                                <span className="ml-2">Mark as Paid</span>
+                                <span className="ml-2">Confirm Payment</span>
                             </button>
                         </div>
                     </div>
@@ -290,7 +310,7 @@ const PaymentConsolePage = () => {
                                 <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Calculation Basis</th>
                                 <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Fine Amount</th>
                                 <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Status</th>
-                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary text-right">Action</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -342,9 +362,10 @@ const PaymentConsolePage = () => {
                                                     </button>
                                                     <button 
                                                         onClick={() => openPaymentModal(item)}
-                                                        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow-sm"
+                                                        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow-sm font-bold"
+                                                        title="Make Payment on Behalf"
                                                     >
-                                                        Pay
+                                                        Make Payment
                                                     </button>
                                                 </>
                                             ) : (

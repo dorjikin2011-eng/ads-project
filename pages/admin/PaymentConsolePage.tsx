@@ -39,8 +39,17 @@ const PaymentConsolePage = () => {
     // Payment Modal State
     const [isPayModalOpen, setPayModalOpen] = useState(false);
     const [selectedCase, setSelectedCase] = useState<PenaltyCase | null>(null);
+    
+    // Manual Payment State
     const [paymentReference, setPaymentReference] = useState('');
-    const [paymentMode, setPaymentMode] = useState('Cash Deposit'); // NEW: Payment Mode
+    const [paymentMode, setPaymentMode] = useState('Cash Deposit'); 
+
+    // BIRMS State
+    const [paymentTab, setPaymentTab] = useState<'Manual' | 'BIRMS'>('Manual');
+    const [birmsType, setBirmsType] = useState('Asset Declaration Fine');
+    const [birmsSubtype, setBirmsSubtype] = useState('');
+    const [birmsLoading, setBirmsLoading] = useState(false);
+    const [birmsResult, setBirmsResult] = useState<any>(null);
 
     // Forward Modal State
     const [isForwardModalOpen, setForwardModalOpen] = useState(false);
@@ -74,16 +83,33 @@ const PaymentConsolePage = () => {
     const openPaymentModal = (item: PenaltyCase) => {
         setSelectedCase(item);
         setPaymentReference('');
-        setPaymentMode('Cash Deposit'); // Reset to default
+        setPaymentMode('Cash Deposit');
+        setPaymentTab('Manual'); // Default to manual
+        setBirmsResult(null);
+        setBirmsSubtype('');
         setPayModalOpen(true);
     };
 
-    const confirmPayment = () => {
+    const confirmPayment = (method: string, ref: string) => {
         if (selectedCase) {
             setCases(cases.map(c => c.id === selectedCase.id ? { ...c, status: 'Paid' } : c));
             setPayModalOpen(false);
-            alert(`Payment Successfully Recorded on Behalf of ${selectedCase.officialName}!\n\nAmount: ${formatCurrency(selectedCase.fineAmount)}\nMode: ${paymentMode}\nRef: ${paymentReference}`);
+            alert(`Payment Successfully Recorded!\n\nOfficial: ${selectedCase.officialName}\nAmount: ${formatCurrency(selectedCase.fineAmount)}\nMethod: ${method}\nRef: ${ref}`);
         }
+    };
+
+    // BIRMS Handlers
+    const handleBirmsSearch = () => {
+        setBirmsLoading(true);
+        // Simulate API Call
+        setTimeout(() => {
+            setBirmsLoading(false);
+            setBirmsResult({
+                transactionId: 'BIRMS-' + Math.floor(Math.random() * 100000),
+                amount: selectedCase?.fineAmount,
+                status: 'Ready for Payment'
+            });
+        }, 1500);
     };
 
     const sendReminder = (name: string) => {
@@ -169,69 +195,141 @@ const PaymentConsolePage = () => {
                 </div>
             </Modal>
 
-            {/* Payment Modal - ENHANCED for "On Behalf" */}
+            {/* Payment Modal - ENHANCED with BIRMS */}
             <Modal 
                 isOpen={isPayModalOpen} 
                 onClose={() => setPayModalOpen(false)} 
-                title="Make Payment (On Behalf)"
+                title={selectedCase ? `Payment for ${selectedCase.officialName}` : 'Payment'}
             >
                 {selectedCase && (
                     <div className="space-y-4">
-                        <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                            <div className="flex justify-between mb-2">
-                                <span className="text-text-secondary">Official:</span>
-                                <span className="font-semibold text-text-main">{selectedCase.officialName}</span>
-                            </div>
-                            <div className="flex justify-between mb-2">
-                                <span className="text-text-secondary">Violation:</span>
-                                <span className="font-medium text-red-600">{selectedCase.type}</span>
-                            </div>
-                            <div className="flex justify-between border-t pt-2 mt-2">
-                                <span className="text-text-secondary font-bold">Amount Due:</span>
-                                <span className="font-bold text-xl text-primary">{formatCurrency(selectedCase.fineAmount)}</span>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Payment Mode</label>
-                            <select 
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                                value={paymentMode}
-                                onChange={(e) => setPaymentMode(e.target.value)}
-                            >
-                                <option>Cash Deposit (at ACC Office)</option>
-                                <option>Cheque</option>
-                                <option>Direct Bank Transfer (Manual Verify)</option>
-                                <option>Salary Deduction</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Receipt No. / Reference</label>
-                            <input 
-                                type="text" 
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                                placeholder="e.g., RCPT-889900"
-                                value={paymentReference}
-                                onChange={(e) => setPaymentReference(e.target.value)}
-                            />
-                        </div>
-                        
-                        <div className="bg-yellow-50 p-2 text-xs text-yellow-800 rounded border border-yellow-100">
-                            <strong>Note:</strong> You are recording a payment on behalf of the declarant. This action is final and will clear the pending status.
-                        </div>
-
-                        <div className="flex justify-end space-x-3 pt-4">
-                            <button onClick={() => setPayModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
+                        {/* Toggle Tabs */}
+                        <div className="flex border-b border-gray-200 mb-4">
                             <button 
-                                onClick={confirmPayment} 
-                                disabled={!paymentReference}
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                onClick={() => setPaymentTab('Manual')}
+                                className={`flex-1 pb-2 text-sm font-medium ${paymentTab === 'Manual' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                <CheckIcon /> 
-                                <span className="ml-2">Confirm Payment</span>
+                                Manual / Offline
+                            </button>
+                            <button 
+                                onClick={() => setPaymentTab('BIRMS')}
+                                className={`flex-1 pb-2 text-sm font-medium ${paymentTab === 'BIRMS' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                BIRMS Online
                             </button>
                         </div>
+
+                        <div className="bg-gray-50 p-3 rounded border border-gray-200 mb-4">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Fine Amount:</span>
+                                <span className="font-bold text-gray-900">{formatCurrency(selectedCase.fineAmount)}</span>
+                            </div>
+                        </div>
+
+                        {paymentTab === 'Manual' ? (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">Payment Mode</label>
+                                    <select 
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                                        value={paymentMode}
+                                        onChange={(e) => setPaymentMode(e.target.value)}
+                                    >
+                                        <option>Cash Deposit (at ACC Office)</option>
+                                        <option>Cheque</option>
+                                        <option>Direct Bank Transfer (Manual Verify)</option>
+                                        <option>Salary Deduction</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">Receipt No. / Reference</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                                        placeholder="e.g., RCPT-889900"
+                                        value={paymentReference}
+                                        onChange={(e) => setPaymentReference(e.target.value)}
+                                    />
+                                </div>
+                                <div className="flex justify-end space-x-3 pt-4">
+                                    <button onClick={() => setPayModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancel</button>
+                                    <button 
+                                        onClick={() => confirmPayment(paymentMode, paymentReference)} 
+                                        disabled={!paymentReference}
+                                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                    >
+                                        <CheckIcon /> <span className="ml-2">Confirm Payment</span>
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            // BIRMS INTEGRATION UI
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-center mb-4">
+                                    <img src="https://www.acc.org.bt/wp-content/uploads/2021/08/ACC-Location.png" alt="BIRMS Logo" className="h-12 w-12 object-contain rounded-full border p-1" />
+                                    <div className="ml-3 text-center">
+                                        <h3 className="text-lg font-bold text-blue-900">BIRMS</h3>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wide">Online Payment Gateway</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Payment Type</label>
+                                    <select 
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                                        value={birmsType}
+                                        onChange={(e) => setBirmsType(e.target.value)}
+                                    >
+                                        <option>Asset Declaration Fine</option>
+                                        <option>Administrative Penalty</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Select Type First</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter Official ID or Ref No"
+                                        value={birmsSubtype}
+                                        onChange={(e) => setBirmsSubtype(e.target.value)}
+                                    />
+                                </div>
+
+                                {!birmsResult && (
+                                    <button 
+                                        onClick={handleBirmsSearch}
+                                        disabled={!birmsSubtype || birmsLoading}
+                                        className="w-full py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center"
+                                    >
+                                        {birmsLoading ? (
+                                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                                        ) : null}
+                                        {birmsLoading ? 'Searching...' : 'Search'}
+                                    </button>
+                                )}
+
+                                {birmsResult && (
+                                    <div className="bg-green-50 border border-green-200 rounded p-3 mt-2 animate-fade-in">
+                                        <p className="text-xs text-green-800 font-bold uppercase">Record Found</p>
+                                        <div className="flex justify-between text-sm mt-1">
+                                            <span>Transaction ID:</span>
+                                            <span className="font-mono">{birmsResult.transactionId}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm font-bold mt-2 border-t border-green-200 pt-2">
+                                            <span>Total Payable:</span>
+                                            <span>{formatCurrency(birmsResult.amount)}</span>
+                                        </div>
+                                        <button 
+                                            onClick={() => confirmPayment('BIRMS Online', birmsResult.transactionId)}
+                                            className="w-full mt-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-bold shadow-sm"
+                                        >
+                                            Pay Now (Nu. {birmsResult.amount})
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </Modal>
@@ -365,7 +463,7 @@ const PaymentConsolePage = () => {
                                                         className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 shadow-sm font-bold"
                                                         title="Make Payment on Behalf"
                                                     >
-                                                        Make Payment
+                                                        Pay on Behalf
                                                     </button>
                                                 </>
                                             ) : (

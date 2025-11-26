@@ -8,28 +8,45 @@ import { UserRole } from './types';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>('official');
+  const [viewMode, setViewMode] = useState<'admin' | 'declarant' | 'hoa'>('declarant'); // Control which dashboard to show
 
   const handleLogin = useCallback((role: UserRole) => {
     setUserRole(role);
     setIsLoggedIn(true);
+    // Set initial view mode based on role
+    if (role === 'admin' || role === 'agency_admin') setViewMode('admin');
+    else if (role === 'hoa') setViewMode('hoa');
+    else setViewMode('declarant');
   }, []);
 
   const handleLogout = useCallback(() => {
     setIsLoggedIn(false);
-    setUserRole('official'); // Reset to default
+    setUserRole('official');
+    setViewMode('declarant');
   }, []);
 
-  // Determine which dashboard to render based on role
+  const switchView = (mode: 'admin' | 'declarant' | 'hoa') => {
+      setViewMode(mode);
+  };
+
+  // Determine which dashboard to render
   const renderDashboard = () => {
-      switch(userRole) {
-          case 'admin':
-          case 'agency_admin':
-              return <AdminDashboardPage userRole={userRole} onLogout={handleLogout} />;
-          case 'hoa':
-              return <HoADashboardPage onLogout={handleLogout} />;
-          default:
-              return <DashboardPage onLogout={handleLogout} />;
+      // If admin wants to file their own declaration
+      if (viewMode === 'declarant') {
+          return <DashboardPage onLogout={handleLogout} userRole={userRole} onSwitchView={() => switchView(userRole === 'hoa' ? 'hoa' : 'admin')} />;
       }
+
+      // Role-specific dashboards
+      if (viewMode === 'hoa') {
+          return <HoADashboardPage onLogout={handleLogout} />;
+      }
+      
+      // Admin Console
+      if (viewMode === 'admin') {
+          return <AdminDashboardPage userRole={userRole} onLogout={handleLogout} onSwitchView={() => switchView('declarant')} />;
+      }
+      
+      return <DashboardPage onLogout={handleLogout} />;
   };
 
   return (

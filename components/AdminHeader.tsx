@@ -19,6 +19,7 @@ interface AdminHeaderProps {
     setActivePage: (page: string) => void;
     onLogout: () => void;
     userRole: UserRole;
+    onSwitchView?: () => void; // New Prop
 }
 
 const NavLink: React.FC<{ label: string; page: string; activePage: string; icon: React.ReactNode; setActivePage: (page: string) => void }> = ({ label, page, activePage, icon, setActivePage }) => (
@@ -35,7 +36,7 @@ const NavLink: React.FC<{ label: string; page: string; activePage: string; icon:
     </li>
 );
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, onLogout, userRole }) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, onLogout, userRole, onSwitchView }) => {
     const [profileOpen, setProfileOpen] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
 
@@ -49,12 +50,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Simulated Names based on role
+    // Updated Titles
+    const title = userRole === 'admin' ? 'CADA (ACC)' : 'ADA (Agency)';
+    const subtitle = userRole === 'admin' ? 'Central Asset Declaration Administrator' : 'Asset Declaration Administrator';
+
     const adminName = userRole === 'admin' ? 'Tashi Dorji' : 'Karma Wangdi';
     const adminRoleLabel = userRole === 'admin' ? 'CADA' : 'ADA - Ministry of Finance';
-
-    // Header titles (Keep or remove based on previous step, ensuring consistency)
-    // Previous step removed titles next to logo, so we keep them removed here.
 
     return (
         <header className="bg-white shadow-md sticky top-0 z-40 border-b-4 border-text-main">
@@ -97,6 +98,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
 
                     {/* Right Section: Actions and User Menu */}
                     <div className="flex items-center space-x-5">
+                        {/* SWITCH VIEW BUTTON */}
+                        {onSwitchView && (
+                            <button 
+                                onClick={onSwitchView}
+                                className="text-xs font-bold text-primary border border-primary px-3 py-1 rounded hover:bg-blue-50 transition"
+                            >
+                                File My Declaration
+                            </button>
+                        )}
+
                         <button className="relative text-text-secondary hover:text-text-main">
                             <BellIcon />
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>

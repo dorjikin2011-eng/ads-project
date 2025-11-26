@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import DashboardCard from '../components/DashboardCard';
 import DeclarationRow from '../components/DeclarationRow';
-import { Declaration, DeclarationStatus } from '../types';
+import { Declaration, DeclarationStatus, UserRole } from '../types';
 import FileNewPage from './FileNewPage';
 import ProfilePage from './ProfilePage';
 import HistoryPage from './HistoryPage';
@@ -12,10 +12,12 @@ import PaymentPage from './PaymentPage';
 import WhistleblowingPage from './WhistleblowingPage';
 import ContactPage from './ContactPage';
 import DocumentIcon from '../components/icons/DocumentIcon';
-import Modal from '../components/Modal'; // Ensure Modal is imported
+import Modal from '../components/Modal';
 
 interface DashboardPageProps {
   onLogout: () => void;
+  userRole?: UserRole; // New Prop
+  onSwitchView?: () => void; // New Prop
 }
 
 const mockDeclarations: Declaration[] = [
@@ -28,7 +30,6 @@ const mockDeclarations: Declaration[] = [
 const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => void }) => {
     const isCleared = mockDeclarations[0].type === 'Vacation of Office' && mockDeclarations[0].status === DeclarationStatus.APPROVED;
     
-    // Amendment Modal State
     const [isAmendmentModalOpen, setAmendmentModalOpen] = useState(false);
     const [amendmentReason, setAmendmentReason] = useState('');
     const [targetDeclaration, setTargetDeclaration] = useState<Declaration | null>(null);
@@ -181,7 +182,7 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
     );
 };
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwitchView }) => {
   const [activePage, setActivePage] = useState('dashboard');
   const [profilePicture, setProfilePicture] = useState('https://picsum.photos/100');
 
@@ -202,11 +203,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
 
   return (
     <div className="flex flex-col h-screen bg-secondary">
+      {/* Pass Switch Prop to Header */}
       <Header 
         onLogout={onLogout} 
         activePage={activePage} 
         setActivePage={setActivePage} 
-        profilePicture={profilePicture} 
+        profilePicture={profilePicture}
+        userRole={userRole}
+        onSwitchView={onSwitchView}
       />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="container mx-auto">

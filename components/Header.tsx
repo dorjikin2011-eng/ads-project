@@ -9,13 +9,15 @@ import MailIcon from './icons/MailIcon';
 import ProfileIcon from './icons/ProfileIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import PngLogoIcon from './icons/PngLogoIcon';
-
+import { UserRole } from '../types';
 
 interface HeaderProps {
     activePage: string;
     setActivePage: (page: string) => void;
     onLogout: () => void;
     profilePicture: string;
+    userRole?: UserRole; // New Prop
+    onSwitchView?: () => void; // New Prop
 }
 
 const NavLink: React.FC<{ label: string; page: string; activePage: string; setActivePage: (page: string) => void }> = ({ label, page, activePage, setActivePage }) => (
@@ -42,7 +44,7 @@ const DropdownLink: React.FC<{ icon: React.ReactNode; label: string; onClick: ()
 );
 
 
-const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, onLogout, profilePicture }) => {
+const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, onLogout, profilePicture, userRole, onSwitchView }) => {
     const [resourcesOpen, setResourcesOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
 
@@ -69,6 +71,8 @@ const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, onLogout, pr
         setProfileOpen(false);
     };
 
+    const isAdmin = userRole === 'admin' || userRole === 'agency_admin' || userRole === 'hoa';
+
     return (
         <header className="bg-white shadow-md sticky top-0 z-40">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -91,6 +95,16 @@ const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, onLogout, pr
 
                     {/* Right Section: Actions and User Menu */}
                     <div className="flex items-center space-x-5">
+                        {/* SWITCH BACK BUTTON */}
+                        {isAdmin && onSwitchView && (
+                             <button 
+                                onClick={onSwitchView}
+                                className="text-xs font-bold text-white bg-gray-800 px-3 py-1.5 rounded hover:bg-gray-700 transition"
+                            >
+                                Switch to Admin Console
+                            </button>
+                        )}
+
                         {/* Resources Dropdown */}
                         <div className="relative" ref={resourcesRef}>
                             <button onClick={() => setResourcesOpen(!resourcesOpen)} className="flex items-center text-sm font-medium text-text-secondary hover:text-primary">

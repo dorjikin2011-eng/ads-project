@@ -45,9 +45,10 @@ const atrReport = {
 
 interface HoADashboardPageProps {
     onLogout: () => void;
+    onSwitchView?: () => void; // Added Prop
 }
 
-const HoADashboardPage: React.FC<HoADashboardPageProps> = ({ onLogout }) => {
+const HoADashboardPage: React.FC<HoADashboardPageProps> = ({ onLogout, onSwitchView }) => {
     const [activePage, setActivePage] = useState('overview');
     
     // State for both reports
@@ -260,7 +261,7 @@ const HoADashboardPage: React.FC<HoADashboardPageProps> = ({ onLogout }) => {
 
     return (
         <div className="flex flex-col h-screen bg-gray-100">
-            <HoAHeader activePage={activePage} setActivePage={(page) => setActivePage(page)} onLogout={onLogout} />
+            <HoAHeader activePage={activePage} setActivePage={(page) => setActivePage(page)} onLogout={onLogout} onSwitchView={onSwitchView} />
             <main className="flex-1 overflow-y-auto p-8">
                 <div className="container mx-auto max-w-7xl">
                     {renderContent()}

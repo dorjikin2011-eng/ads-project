@@ -8,7 +8,7 @@ import { UserRole } from './types';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>('official');
-  const [viewMode, setViewMode] = useState<'admin' | 'declarant' | 'hoa'>('declarant'); // Control which dashboard to show
+  const [viewMode, setViewMode] = useState<'admin' | 'declarant' | 'hoa'>('declarant');
 
   const handleLogin = useCallback((role: UserRole) => {
     setUserRole(role);
@@ -31,14 +31,16 @@ function App() {
 
   // Determine which dashboard to render
   const renderDashboard = () => {
-      // If admin wants to file their own declaration
+      // If any special role wants to file their own declaration
       if (viewMode === 'declarant') {
-          return <DashboardPage onLogout={handleLogout} userRole={userRole} onSwitchView={() => switchView(userRole === 'hoa' ? 'hoa' : 'admin')} />;
+          // Pass the callback to switch back to their respective dashboard
+          const backTarget = userRole === 'hoa' ? 'hoa' : 'admin';
+          return <DashboardPage onLogout={handleLogout} userRole={userRole} onSwitchView={() => switchView(backTarget)} />;
       }
 
       // Role-specific dashboards
       if (viewMode === 'hoa') {
-          return <HoADashboardPage onLogout={handleLogout} />;
+          return <HoADashboardPage onLogout={handleLogout} onSwitchView={() => switchView('declarant')} />;
       }
       
       // Admin Console

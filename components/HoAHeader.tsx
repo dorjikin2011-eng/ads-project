@@ -10,6 +10,7 @@ interface HoAHeaderProps {
     activePage: string;
     setActivePage: (page: string) => void;
     onLogout: () => void;
+    onSwitchView?: () => void; // New Prop
 }
 
 const NavLink: React.FC<{ label: string; page: string; activePage: string; icon: React.ReactNode; setActivePage: (page: string) => void }> = ({ label, page, activePage, icon, setActivePage }) => (
@@ -26,7 +27,7 @@ const NavLink: React.FC<{ label: string; page: string; activePage: string; icon:
     </li>
 );
 
-const HoAHeader: React.FC<HoAHeaderProps> = ({ activePage, setActivePage, onLogout }) => {
+const HoAHeader: React.FC<HoAHeaderProps> = ({ activePage, setActivePage, onLogout, onSwitchView }) => {
     const [profileOpen, setProfileOpen] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +66,16 @@ const HoAHeader: React.FC<HoAHeaderProps> = ({ activePage, setActivePage, onLogo
 
                     {/* Right Section: Actions and User Menu */}
                     <div className="flex items-center space-x-5">
+                         {/* SWITCH VIEW BUTTON FOR HOA */}
+                         {onSwitchView && (
+                            <button 
+                                onClick={onSwitchView}
+                                className="text-xs font-bold text-primary border border-primary px-3 py-1 rounded hover:bg-blue-50 transition"
+                            >
+                                File My Declaration
+                            </button>
+                        )}
+
                         <button className="relative text-text-secondary hover:text-text-main">
                             <BellIcon />
                             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>

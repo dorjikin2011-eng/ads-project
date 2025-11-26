@@ -89,18 +89,12 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
 
     // Filter Logic
     const filteredDeclarants = Object.values(mockDeclarantsData).filter((d: any) => {
-        // Queue Filter
         if (queueFilter === 'Pending' && d.status !== 'Pending Review') return false;
         if (queueFilter === 'Returned' && d.status !== 'Returned') return false;
         if (queueFilter === 'Amendment' && d.status !== 'Amendment Requested') return false;
 
-        // Role & Schedule Logic
-        if (userRole === 'agency_admin') {
-            // Agency Admin sees only Schedule II
-            return d.schedule === 'Schedule II';
-        }
+        if (userRole === 'agency_admin') return d.schedule === 'Schedule II';
         if (userRole === 'admin') {
-            // ACC Admin sees all (unless filtered)
             if (scheduleFilter === 'All') return true;
             return d.schedule === scheduleFilter;
         }
@@ -116,10 +110,9 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
     const handlePenaltySubmit = () => { alert(`Penalty Imposed.`); setPenaltyModalOpen(false); };
     const handleReturnSubmit = () => { alert(`Returned to ${selected?.name}. Reason: ${returnReason}`); setReturnModalOpen(false); };
     
-    // --- AMENDMENT APPROVAL LOGIC UPDATE ---
     const handleApproveAmendment = () => {
         if (selected?.schedule === 'Schedule II') {
-            if (userRole === 'agency_admin' || userRole === 'admin') { // ACC Admin can also approve Sch II
+            if (userRole === 'agency_admin' || userRole === 'admin') {
                  alert(`Amendment Request for ${selected.name} (Schedule II) APPROVED.\nApprover: ${userRole === 'admin' ? 'ACC Admin' : 'Agency Admin'}.\nStatus: Open for Editing.`);
             } else {
                 alert("Error: Access Denied.");
@@ -134,14 +127,14 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
         }
     };
 
-    // --- Renderers (Assets, Financials - Same as before) ---
+    // --- Renderers (Corrected Guidance & Hiding API Columns for ADA) ---
     const renderAssets = () => ( <div className="space-y-6"> <div className="border rounded-lg overflow-hidden"> <div className="bg-gray-50 p-3 border-b flex justify-between items-center"> <h3 className="font-bold text-gray-700">Immovable Properties</h3> {userRole === 'admin' && <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100"><ServerIcon className="w-3 h-3 mr-1"/> Linked: NLCS</span>} </div> <table className="w-full text-sm text-left"> <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="p-3">Type</th><th className="p-3">Details</th><th className="p-3">Declared</th>{userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System (API)</th>}{userRole === 'admin' && <th className="p-3 text-right">Status</th>}</tr></thead> <tbody> {selected?.immovable.map((item: any, i: number) => ( <tr key={i} className="border-b last:border-0"> <td className="p-3 font-medium">{item.type}</td> <td className="p-3 text-gray-500">{item.location}</td> <td className="p-3">{item.declared}</td> {userRole === 'admin' && <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">{item.system}</td>} {userRole === 'admin' && <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>} </tr> ))} {selected?.immovable.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No immovable assets.</td></tr>} </tbody> </table> </div> <div className="border rounded-lg overflow-hidden"> <div className="bg-gray-50 p-3 border-b flex justify-between items-center"> <h3 className="font-bold text-gray-700">Movable Assets</h3> {userRole === 'admin' && <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100"><ServerIcon className="w-3 h-3 mr-1"/> Linked: RSTA</span>} </div> <table className="w-full text-sm text-left"> <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="p-3">Type</th><th className="p-3">Reg.</th><th className="p-3">Declared</th>{userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System (API)</th>}{userRole === 'admin' && <th className="p-3 text-right">Status</th>}</tr></thead> <tbody> {selected?.movable.map((item: any, i: number) => ( <tr key={i} className="border-b last:border-0"> <td className="p-3 font-medium">{item.type}</td> <td className="p-3 text-gray-500">{item.reg}</td> <td className="p-3">{item.declared}</td> {userRole === 'admin' && <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">{item.system}</td>} {userRole === 'admin' && <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>} </tr> ))} {selected?.movable.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-gray-400">No movable assets.</td></tr>} </tbody> </table> </div> </div> );
     const renderFinancials = () => ( <div className="space-y-6"> <div className="border rounded-lg overflow-hidden"> <div className="bg-gray-50 p-3 border-b flex justify-between items-center"><h3 className="font-bold text-gray-700">Income</h3>{userRole === 'admin' && <span className="text-xs text-blue-600 flex items-center bg-blue-50 px-2 py-1 rounded border border-blue-100"><ServerIcon className="w-3 h-3 mr-1"/> Linked: FIU</span>}</div> <table className="w-full text-sm text-left"> <thead className="bg-gray-50 text-xs uppercase text-gray-500"><tr><th className="p-3">Source</th><th className="p-3">Declared</th>{userRole === 'admin' && <th className="p-3 bg-blue-50 text-blue-800 border-l">System (API)</th>}{userRole === 'admin' && <th className="p-3 text-right">Status</th>}</tr></thead> <tbody> {selected?.income.map((item: any, i: number) => ( <tr key={i} className="border-b last:border-0"> <td className="p-3 font-medium">{item.source}</td> <td className="p-3 font-mono text-green-700">Nu. {item.declared}</td> {userRole === 'admin' && <td className="p-3 bg-blue-50/30 border-l font-mono text-xs text-gray-600">Nu. {item.system}</td>} {userRole === 'admin' && <td className="p-3 text-right"><ApiMatchBadge status={item.apiStatus} /></td>} </tr> ))} </tbody> </table> </div> </div> );
 
     return (
         <div className="flex flex-col h-full">
             {/* Modals */}
-            <Modal isOpen={isCertModalOpen} onClose={() => setCertModalOpen(false)} title="Issue Clearance Certificate"> <div className="space-y-4 text-center"> <div className="bg-green-50 p-4 rounded text-green-800 text-sm border border-green-200"> You are confirming that <strong>{selected?.name}</strong> has satisfactorily declared their assets upon Vacation of Office. </div> <button onClick={issueCertificate} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 font-bold">Verify & Notify ACC</button> </div> </Modal>
+            <Modal isOpen={isCertModalOpen} onClose={() => setCertModalOpen(false)} title="Issue Clearance Certificate"> <div className="space-y-4 text-center"> <div className="bg-green-50 p-4 rounded text-green-800 text-sm border border-green-200"> You are confirming that <strong>{selected?.name}</strong> has satisfactorily declared their assets upon Vacation of Office. </div> <p className="text-gray-600 text-sm">This action will generate a digital Clearance Certificate available for the declarant to download.</p> <button onClick={issueCertificate} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 font-bold">Verify & Notify ACC</button> </div> </Modal>
             <Modal isOpen={isPenaltyModalOpen} onClose={() => setPenaltyModalOpen(false)} title="Impose Penalty"> <div className="space-y-4"> <input type="number" className="w-full border rounded p-2" value={penaltyAmount} onChange={(e) => setPenaltyAmount(e.target.value)} placeholder="Amount (Nu.)" /> <button onClick={handlePenaltySubmit} className="px-3 py-1 bg-red-600 text-white rounded w-full">Confirm</button> </div> </Modal>
             <Modal isOpen={isReturnModalOpen} onClose={() => setReturnModalOpen(false)} title="Return for Correction"> <div className="space-y-4"> <textarea className="w-full border rounded p-2" rows={4} placeholder="Reason for return..." value={returnReason} onChange={(e) => setReturnReason(e.target.value)}></textarea> <button onClick={handleReturnSubmit} className="px-3 py-1 bg-orange-500 text-white rounded w-full">Send Return Notification</button> </div> </Modal>
 
@@ -212,10 +205,17 @@ const AdminVerificationPage: React.FC<AdminVerificationPageProps> = ({ userRole,
                                             <div className="space-y-3">
                                                 <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary"> <input type="checkbox" checked={checks.timely} onChange={(e) => setChecks({...checks, timely: e.target.checked})} className="h-5 w-5 text-green-600 rounded" /> <span className="text-sm text-gray-700">1. Timeliness Check</span> </label>
                                                 <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary"> <input type="checkbox" checked={checks.complete} onChange={(e) => setChecks({...checks, complete: e.target.checked})} className="h-5 w-5 text-green-600 rounded" /> <span className="text-sm text-gray-700">2. Completeness Check</span> </label>
-                                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary"> <input type="checkbox" checked={checks.accurate} onChange={(e) => setChecks({...checks, accurate: e.target.checked})} className="h-5 w-5 text-green-600 rounded" /> <span className="text-sm text-gray-700">3. Accuracy Check (vs Evidence)</span> </label>
+                                                <label className="flex items-center space-x-3 p-2 bg-gray-50 rounded cursor-pointer border hover:border-primary"> <input type="checkbox" checked={checks.accurate} onChange={(e) => setChecks({...checks, accurate: e.target.checked})} className="h-5 w-5 text-green-600 rounded" /> <span className="text-sm text-gray-700">3. Accuracy Check</span> </label>
                                             </div>
                                         </VerificationCard>
-                                        <VerificationCard title="Guidance"> <p className="text-sm text-gray-600">Please review the <strong>Assets</strong>, <strong>Financials</strong>, and <strong>Documents</strong> tabs. Use the cross-check data provided from external APIs (NLCS/RSTA) to verify accuracy.</p> </VerificationCard>
+                                        <VerificationCard title="Guidance">
+                                            <p className="text-sm text-gray-600">
+                                                Please review the <strong>Assets</strong>, <strong>Financials</strong>, and <strong>Documents</strong> tabs. 
+                                                {userRole === 'admin' 
+                                                    ? ' Use the cross-check data provided from external APIs (NLCS/RSTA) to verify accuracy.' 
+                                                    : ' Verify the declared information against uploaded evidence.'}
+                                            </p>
+                                        </VerificationCard>
                                     </div>
                                 )}
                                 {activeTab === 'Assets' && renderAssets()}

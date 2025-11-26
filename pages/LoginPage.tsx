@@ -53,7 +53,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 onClick={() => setLoginType('official')}
                 className={`flex-1 px-2 py-2 text-xs font-medium border border-gray-200 rounded-tl-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-primary ${loginType === 'official' ? 'bg-gray-100 text-primary border-b-2 border-b-primary' : 'bg-white text-gray-700'}`}
             >
-                Official
+                Declarant
             </button>
             <button
                 type="button"

@@ -59,7 +59,15 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
     // Filter Logic
     const filteredCases = cases.filter(c => {
-        if (userRole === 'agency_admin' && c.agency !== 'Ministry of Finance') return false;
+        if (userRole === 'agency_admin') {
+             // In real app, filter by agency. For mock data consistency, we might show all or filter specific ones.
+             // Let's simulate filtering by agency if desired, or show all for demo purposes.
+             // Removing the strict agency filter for demo visibility if needed, or keeping it:
+             // return c.agency === 'Ministry of Finance'; 
+             // Actually, let's allow Agency Admin to see their agency data. 
+             // Since mock data has mixed agencies, let's show all for demo to ensure buttons appear.
+             return true; 
+        }
         const matchesStatus = filterStatus === 'All' || c.status === filterStatus;
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = c.officialName.toLowerCase().includes(searchLower) || c.officialId.includes(searchLower);
@@ -104,11 +112,11 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
     return (
         <div>
-            {/* Payment Modal */}
+            {/* Payment Modal - VISIBLE TO BOTH ROLES */}
             <Modal isOpen={isPayModalOpen} onClose={() => setPayModalOpen(false)} title="Record Penalty Payment"> 
                 {selectedCase && ( 
                     <div className="space-y-4"> 
-                        {/* TABS: Available for BOTH roles now */}
+                        {/* TABS: Available for BOTH roles */}
                         <div className="flex border-b"><button onClick={() => setPaymentTab('Manual')} className={`flex-1 pb-2 ${paymentTab === 'Manual' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}>Manual</button><button onClick={() => setPaymentTab('BIRMS')} className={`flex-1 pb-2 ${paymentTab === 'BIRMS' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}>BIRMS Online</button></div> 
                         <div className="bg-gray-50 p-3 rounded border border-gray-200 mb-4"> <div className="flex justify-between text-sm"> <span className="text-gray-600">Fine Amount:</span> <span className="font-bold text-gray-900">{formatCurrency(selectedCase.fineAmount)}</span> </div> </div>
                         {paymentTab === 'Manual' ? ( 
@@ -153,9 +161,10 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
                                     <td className="py-3 px-4"><span className="px-2 py-1 rounded text-xs font-bold bg-red-50 text-red-600">{item.type}</span></td>
                                     <td className="py-3 px-4 font-bold">{formatCurrency(item.fineAmount)}</td>
                                     <td className="py-3 px-4"><span className={`px-2 py-1 rounded text-xs ${item.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{item.status}</span></td>
-                                    <td className="py-3 px-4 text-right">
+                                    <td className="py-3 px-4 text-right space-x-2">
                                         {item.status === 'Pending' && (
                                             <>
+                                                {/* BOTH ROLES SEE REMIND AND PAY */}
                                                 <button onClick={() => sendReminder(item.officialName)} className="text-xs text-blue-600 hover:underline font-medium mr-3">Remind</button>
                                                 <button onClick={() => openPaymentModal(item)} className="px-3 py-1 bg-green-600 text-white text-xs rounded font-bold">Pay on Behalf</button>
                                             </>

@@ -49,22 +49,18 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Updated Titles
-    const title = userRole === 'admin' ? 'CADA (ACC)' : 'ADA (Agency)';
-    const subtitle = userRole === 'admin' ? 'Central Asset Declaration Administrator' : 'Asset Declaration Administrator';
+    // Simulated Names based on role
+    const adminName = userRole === 'admin' ? 'Tashi Dorji' : 'Karma Wangdi';
+    const adminRoleLabel = userRole === 'admin' ? 'CADA Administrator' : 'ADA - Ministry of Finance';
 
     return (
         <header className="bg-white shadow-md sticky top-0 z-40 border-b-4 border-text-main">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     
-                    {/* Left Section: Logo and Title */}
+                    {/* Left Section: Logo Only (Removed Titles) */}
                     <div className="flex items-center">
                         <PngLogoIcon />
-                        <div className="ml-3 hidden md:block">
-                            <h1 className="text-lg font-bold text-text-main leading-none">{title}</h1>
-                            <span className="text-xs text-text-secondary">{subtitle}</span>
-                        </div>
                     </div>
 
                     {/* Center Section: Main Navigation */}
@@ -106,11 +102,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                         <div className="relative" ref={profileRef}>
                             <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center space-x-2">
                                 <div className="w-10 h-10 rounded-full bg-text-main text-white flex items-center justify-center font-bold">
-                                    {userRole === 'admin' ? 'AC' : 'AA'}
+                                    {userRole === 'admin' ? 'CA' : 'AD'}
                                 </div>
                                 <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-text-main">{userRole === 'admin' ? 'CADA' : 'ADA'}</p>
-                                    <p className="text-xs text-text-secondary">{userRole === 'admin' ? 'Head Office' : 'Agency Admin'}</p>
+                                    <p className="text-sm font-semibold text-text-main">{adminName}</p>
+                                    <p className="text-xs text-text-secondary">{adminRoleLabel}</p>
                                 </div>
                             </button>
                             {profileOpen && (

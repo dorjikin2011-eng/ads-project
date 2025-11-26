@@ -5,7 +5,7 @@ import PngLogoIcon from './icons/PngLogoIcon';
 import DashboardIcon from './icons/DashboardIcon';
 import DocumentReportIcon from './icons/DocumentReportIcon';
 import UserGroupIcon from './icons/UserGroupIcon';
-import UserAddIcon from './icons/UserAddIcon'; // Import UserAddIcon
+import UserAddIcon from './icons/UserAddIcon';
 
 interface HoAHeaderProps {
     activePage: string;
@@ -46,24 +46,23 @@ const HoAHeader: React.FC<HoAHeaderProps> = ({ activePage, setActivePage, onLogo
         <header className="bg-white shadow-md sticky top-0 z-40 border-b-4 border-text-main">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
+                    
+                    {/* Left Section: Logo Only */}
                     <div className="flex items-center">
                         <PngLogoIcon />
-                        <div className="ml-3 hidden md:block">
-                            <h1 className="text-lg font-bold text-text-main leading-none">Head of Agency</h1>
-                            <span className="text-xs text-text-secondary">Ministry of Finance - Executive Dashboard</span>
-                        </div>
                     </div>
 
+                    {/* Center Section: Main Navigation */}
                     <nav className="hidden md:flex">
                         <ul className="flex items-center space-x-2">
-                           <NavLink icon={<DashboardIcon />} label="Overview" page="overview" activePage={activePage} setActivePage={setActivePage} />
+                           <NavLink icon={<DashboardIcon />} label="Executive Overview" page="overview" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Report Approval" page="approval" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<UserGroupIcon />} label="Staff List" page="staff" activePage={activePage} setActivePage={setActivePage} />
-                           {/* New Tab for Nominations */}
                            <NavLink icon={<UserAddIcon />} label="Admin Nominations" page="nominations" activePage={activePage} setActivePage={setActivePage} />
                         </ul>
                     </nav>
 
+                    {/* Right Section: Actions and User Menu */}
                     <div className="flex items-center space-x-5">
                          {onSwitchView && (
                             <button 
@@ -73,15 +72,31 @@ const HoAHeader: React.FC<HoAHeaderProps> = ({ activePage, setActivePage, onLogo
                                 File My Declaration
                             </button>
                         )}
-                        <button className="relative text-text-secondary hover:text-text-main"><BellIcon /><span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span></button>
+
+                        <button className="relative text-text-secondary hover:text-text-main">
+                            <BellIcon />
+                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+                        </button>
+                        
                         <div className="relative" ref={profileRef}>
                             <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center space-x-2">
-                                <div className="w-10 h-10 rounded-full bg-text-main text-white flex items-center justify-center font-bold">HoA</div>
-                                <div className="hidden md:block text-left"><p className="text-sm font-semibold text-text-main">Hon'ble Secretary</p><p className="text-xs text-text-secondary">Ministry of Finance</p></div>
+                                <div className="w-10 h-10 rounded-full bg-text-main text-white flex items-center justify-center font-bold">
+                                    HoA
+                                </div>
+                                <div className="hidden md:block text-left">
+                                    <p className="text-sm font-semibold text-text-main">Hon'ble Secretary</p>
+                                    <p className="text-xs text-text-secondary">Ministry of Finance</p>
+                                </div>
                             </button>
                             {profileOpen && (
                                 <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 p-1">
-                                    <button onClick={onLogout} className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"><div className="w-5 h-5 mr-2"><LogoutIcon /></div>Logout</button>
+                                    <button 
+                                        onClick={onLogout}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
+                                    >
+                                        <div className="w-5 h-5 mr-2"><LogoutIcon /></div>
+                                        Logout
+                                    </button>
                                 </div>
                             )}
                         </div>

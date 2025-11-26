@@ -20,9 +20,11 @@ interface PenaltyCase {
 }
 
 const initialCases: PenaltyCase[] = [
-    { id: 'PEN-24-001', officialName: 'Tshering Dorji', officialId: '10203040', agency: 'Ministry of Education', type: 'Late Filing', daysOverdue: 15, fineAmount: 1875, status: 'Pending', generatedDate: '2024-05-15' }, // 15th May
-    { id: 'PEN-24-002', officialName: 'Karma Tenzin', officialId: '50403020', agency: 'Thimphu Thromde', type: 'Non-Filing', fineAmount: 45625, status: 'Pending', generatedDate: '2024-06-01' }, // June 1st
-    { id: 'PEN-24-003', officialName: 'Sonam Wangmo', officialId: '99887766', agency: 'Ministry of Finance', type: 'Late Filing', daysOverdue: 5, fineAmount: 625, status: 'Paid', generatedDate: '2024-05-05' }, // 5th May
+    { id: 'PEN-24-001', officialName: 'Tshering Dorji', officialId: '10203040', agency: 'Ministry of Education', type: 'Late Filing', daysOverdue: 15, fineAmount: 1875, status: 'Pending', generatedDate: '2024-05-15' },
+    { id: 'PEN-24-002', officialName: 'Karma Tenzin', officialId: '50403020', agency: 'Thimphu Thromde', type: 'Non-Filing', fineAmount: 45625, status: 'Pending', generatedDate: '2024-06-01' },
+    { id: 'PEN-24-003', officialName: 'Sonam Wangmo', officialId: '99887766', agency: 'Ministry of Finance', type: 'Late Filing', daysOverdue: 5, fineAmount: 625, status: 'Paid', generatedDate: '2024-05-05' },
+    // NEW PENDING CASE FOR AGENCY ADMIN TO SEE BUTTONS
+    { id: 'PEN-24-006', officialName: 'Dorji Wangchuk', officialId: '88776655', agency: 'Ministry of Finance', type: 'Incomplete Filing', daysOverdue: 0, fineAmount: 3750, status: 'Pending', generatedDate: '2024-05-10' },
     { id: 'PEN-24-004', officialName: 'Pema Lhamo', officialId: '11223344', agency: 'Ministry of Health', type: 'Incomplete Filing', daysOverdue: 0, fineAmount: 3750, status: 'Pending', generatedDate: '2024-03-05' },
 ];
 
@@ -51,7 +53,7 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
     const formatCurrency = (val: number) => "Nu. " + val.toLocaleString();
 
-    // Calculation Logic - Updated per User Request
+    // Calculation Logic
     const getCalculationDetails = (item: PenaltyCase) => {
         const wage = 125;
         if (item.type === 'Late Filing') return `Late (May): ${item.daysOverdue} days × Nu. ${wage}`;

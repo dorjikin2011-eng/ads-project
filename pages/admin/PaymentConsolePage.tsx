@@ -12,7 +12,7 @@ interface PenaltyCase {
     officialName: string;
     officialId: string;
     agency: string;
-    type: 'Late Filing' | 'Non-Filing' | 'False Declaration';
+    type: 'Late Filing' | 'Non-Filing' | 'False Declaration' | 'Incomplete Filing';
     daysOverdue?: number;
     fineAmount: number;
     status: 'Pending' | 'Paid' | 'Waived';
@@ -20,11 +20,10 @@ interface PenaltyCase {
 }
 
 const initialCases: PenaltyCase[] = [
-    { id: 'PEN-24-001', officialName: 'Tshering Dorji', officialId: '10203040', agency: 'Ministry of Education', type: 'Late Filing', daysOverdue: 15, fineAmount: 1750, status: 'Pending', generatedDate: '2024-03-01' },
-    { id: 'PEN-24-002', officialName: 'Karma Tenzin', officialId: '50403020', agency: 'Thimphu Thromde', type: 'Non-Filing', fineAmount: 15000, status: 'Pending', generatedDate: '2024-03-02' },
-    { id: 'PEN-24-003', officialName: 'Sonam Wangmo', officialId: '99887766', agency: 'Ministry of Finance', type: 'Late Filing', daysOverdue: 5, fineAmount: 1250, status: 'Paid', generatedDate: '2024-02-28' },
-    { id: 'PEN-24-004', officialName: 'Pema Lhamo', officialId: '11223344', agency: 'Ministry of Health', type: 'Late Filing', daysOverdue: 45, fineAmount: 3250, status: 'Pending', generatedDate: '2024-03-05' },
-    { id: 'PEN-24-005', officialName: 'Ugyen Tshering', officialId: '77665544', agency: 'Druk Holding', type: 'False Declaration', fineAmount: 20000, status: 'Pending', generatedDate: '2024-03-10' },
+    { id: 'PEN-24-001', officialName: 'Tshering Dorji', officialId: '10203040', agency: 'Ministry of Education', type: 'Late Filing', daysOverdue: 15, fineAmount: 1875, status: 'Pending', generatedDate: '2024-05-15' }, // 15th May
+    { id: 'PEN-24-002', officialName: 'Karma Tenzin', officialId: '50403020', agency: 'Thimphu Thromde', type: 'Non-Filing', fineAmount: 45625, status: 'Pending', generatedDate: '2024-06-01' }, // June 1st
+    { id: 'PEN-24-003', officialName: 'Sonam Wangmo', officialId: '99887766', agency: 'Ministry of Finance', type: 'Late Filing', daysOverdue: 5, fineAmount: 625, status: 'Paid', generatedDate: '2024-05-05' }, // 5th May
+    { id: 'PEN-24-004', officialName: 'Pema Lhamo', officialId: '11223344', agency: 'Ministry of Health', type: 'Incomplete Filing', daysOverdue: 0, fineAmount: 3750, status: 'Pending', generatedDate: '2024-03-05' },
 ];
 
 // Wrapper Component
@@ -52,22 +51,18 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
     const formatCurrency = (val: number) => "Nu. " + val.toLocaleString();
 
+    // Calculation Logic - Updated per User Request
     const getCalculationDetails = (item: PenaltyCase) => {
-        if (item.type === 'Late Filing') return `Base (Nu. 1000) + (${item.daysOverdue} days × Nu. 50)`;
+        const wage = 125;
+        if (item.type === 'Late Filing') return `Late (May): ${item.daysOverdue} days × Nu. ${wage}`;
+        if (item.type === 'Non-Filing') return `Non-Filing (June+): 365 × Nu. ${wage}`;
+        if (item.type === 'Incomplete Filing') return `Incomplete: 30 × Nu. ${wage}`;
         return 'Fixed Penalty';
     };
 
     // Filter Logic
     const filteredCases = cases.filter(c => {
-        if (userRole === 'agency_admin') {
-             // In real app, filter by agency. For mock data consistency, we might show all or filter specific ones.
-             // Let's simulate filtering by agency if desired, or show all for demo purposes.
-             // Removing the strict agency filter for demo visibility if needed, or keeping it:
-             // return c.agency === 'Ministry of Finance'; 
-             // Actually, let's allow Agency Admin to see their agency data. 
-             // Since mock data has mixed agencies, let's show all for demo to ensure buttons appear.
-             return true; 
-        }
+        if (userRole === 'agency_admin' && c.agency !== 'Ministry of Finance') return false;
         const matchesStatus = filterStatus === 'All' || c.status === filterStatus;
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = c.officialName.toLowerCase().includes(searchLower) || c.officialId.includes(searchLower);
@@ -112,13 +107,12 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
     return (
         <div>
-            {/* Payment Modal - VISIBLE TO BOTH ROLES */}
+            {/* Payment Modal */}
             <Modal isOpen={isPayModalOpen} onClose={() => setPayModalOpen(false)} title="Record Penalty Payment"> 
                 {selectedCase && ( 
                     <div className="space-y-4"> 
-                        {/* TABS: Available for BOTH roles */}
                         <div className="flex border-b"><button onClick={() => setPaymentTab('Manual')} className={`flex-1 pb-2 ${paymentTab === 'Manual' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}>Manual</button><button onClick={() => setPaymentTab('BIRMS')} className={`flex-1 pb-2 ${paymentTab === 'BIRMS' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}>BIRMS Online</button></div> 
-                        <div className="bg-gray-50 p-3 rounded border border-gray-200 mb-4"> <div className="flex justify-between text-sm"> <span className="text-gray-600">Fine Amount:</span> <span className="font-bold text-gray-900">{formatCurrency(selectedCase.fineAmount)}</span> </div> </div>
+                        <div className="bg-gray-50 p-3 rounded border border-gray-200 mb-4"> <div className="flex justify-between text-sm"> <span className="text-gray-600">Fine Amount:</span> <span className="font-bold text-gray-900">{formatCurrency(selectedCase.fineAmount)}</span> </div> <div className="text-xs text-gray-500 mt-1 italic">{getCalculationDetails(selectedCase)}</div> </div>
                         {paymentTab === 'Manual' ? ( 
                             <> 
                                 <div> <label className="block text-sm font-medium text-text-secondary mb-1">Payment Mode</label> <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}> <option>Cash Deposit (at Office)</option> <option>Cheque</option> <option>Direct Bank Transfer (Manual Verify)</option> <option>Salary Deduction</option> </select> </div>
@@ -140,7 +134,13 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-                <div><h1 className="text-2xl font-bold text-text-main flex items-center"><BanknotesIcon className="text-green-600 w-8 h-8 mr-3" /> Compliance Payment Console</h1><p className="text-text-secondary mt-1">Manage fines for non-compliance (Late Filing, Non-Filing).</p></div>
+                <div>
+                    <h1 className="text-2xl font-bold text-text-main flex items-center">
+                        <BanknotesIcon className="text-green-600 w-8 h-8 mr-3" />
+                        Compliance Payment Console
+                    </h1>
+                    <p className="text-text-secondary mt-1">Manage fines for non-compliance (Late Filing, Non-Filing).</p>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"> <DashboardCard title="Outstanding Dues" value={formatCurrency(totalOutstanding)} subtitle="Pending Collection" variant="danger" /> <DashboardCard title="Total Collected" value={formatCurrency(totalCollected)} subtitle="Recovered Fines" variant="success" /> <DashboardCard title="Active Cases" value={activeCasesCount.toString()} subtitle="Officials Fined" variant="warning" /> </div>
@@ -151,7 +151,7 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
                     <table className="w-full text-left">
                         <thead className="bg-gray-100 border-b border-gray-200">
                             <tr>
-                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Official</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Violation Type</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Amount</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Status</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary text-right">Action</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Official</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Violation Type</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Calculation</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Fine Amount</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Status</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -159,12 +159,12 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
                                 <tr key={item.id} className="hover:bg-gray-50">
                                     <td className="py-3 px-4"><div className="font-medium">{item.officialName}</div><div className="text-xs text-gray-500">{item.agency}</div></td>
                                     <td className="py-3 px-4"><span className="px-2 py-1 rounded text-xs font-bold bg-red-50 text-red-600">{item.type}</span></td>
+                                    <td className="py-3 px-4 text-xs text-gray-600">{getCalculationDetails(item)}</td>
                                     <td className="py-3 px-4 font-bold">{formatCurrency(item.fineAmount)}</td>
                                     <td className="py-3 px-4"><span className={`px-2 py-1 rounded text-xs ${item.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{item.status}</span></td>
                                     <td className="py-3 px-4 text-right space-x-2">
                                         {item.status === 'Pending' && (
                                             <>
-                                                {/* BOTH ROLES SEE REMIND AND PAY */}
                                                 <button onClick={() => sendReminder(item.officialName)} className="text-xs text-blue-600 hover:underline font-medium mr-3">Remind</button>
                                                 <button onClick={() => openPaymentModal(item)} className="px-3 py-1 bg-green-600 text-white text-xs rounded font-bold">Pay on Behalf</button>
                                             </>

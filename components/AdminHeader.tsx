@@ -19,18 +19,19 @@ interface AdminHeaderProps {
     setActivePage: (page: string) => void;
     onLogout: () => void;
     userRole: UserRole;
-    onSwitchView?: () => void; // New Prop
+    onSwitchView?: () => void;
 }
 
+// Reduced padding (px-2 instead of px-3) and text size for compactness
 const NavLink: React.FC<{ label: string; page: string; activePage: string; icon: React.ReactNode; setActivePage: (page: string) => void }> = ({ label, page, activePage, icon, setActivePage }) => (
-    <li>
+    <li className="shrink-0">
         <button 
             onClick={() => setActivePage(page)}
-            className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`flex items-center px-2 py-2 rounded-md text-xs font-bold transition-colors whitespace-nowrap ${
                 activePage === page ? 'text-white bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
         >
-            <span className="mr-2 w-5 h-5">{icon}</span>
+            <span className="mr-1.5 w-4 h-4">{icon}</span>
             {label}
         </button>
     </li>
@@ -50,59 +51,51 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Updated Titles
-    const title = userRole === 'admin' ? 'CADA (ACC)' : 'ADA (Agency)';
-    const subtitle = userRole === 'admin' ? 'Central Asset Declaration Administrator' : 'Asset Declaration Administrator';
-
+    // Simulated Names
     const adminName = userRole === 'admin' ? 'Tashi Dorji' : 'Karma Wangdi';
     const adminRoleLabel = userRole === 'admin' ? 'CADA' : 'ADA - Ministry of Finance';
 
     return (
         <header className="bg-white shadow-md sticky top-0 z-40 border-b-4 border-text-main">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20">
+            <div className="container mx-auto px-4">
+                <div className="flex items-center justify-between h-16">
                     
-                    {/* Left Section: Logo Only */}
-                    <div className="flex items-center">
+                    {/* Left Section: Logo */}
+                    <div className="flex items-center shrink-0 mr-4">
                         <PngLogoIcon />
                     </div>
 
-                    {/* Center Section: Main Navigation */}
-                    <nav className="hidden md:flex">
-                        <ul className="flex items-center space-x-2">
-                           <NavLink icon={<DashboardIcon />} label="Overview" page="dashboard" activePage={activePage} setActivePage={setActivePage} />
-                           <NavLink icon={<UserGroupIcon />} label="Declarants" page="users" activePage={activePage} setActivePage={setActivePage} />
-                           <NavLink icon={<ClipboardCheckIcon />} label="Verification" page="verification" activePage={activePage} setActivePage={setActivePage} />
+                    {/* Center Section: Main Navigation (Scrollable if needed) */}
+                    <nav className="flex-1 overflow-x-auto no-scrollbar">
+                        <ul className="flex items-center space-x-1 h-full">
+                           <NavLink icon={<DashboardIcon />} label="Home" page="dashboard" activePage={activePage} setActivePage={setActivePage} />
+                           <NavLink icon={<UserGroupIcon />} label="Users" page="users" activePage={activePage} setActivePage={setActivePage} />
+                           <NavLink icon={<ClipboardCheckIcon />} label="Verify" page="verification" activePage={activePage} setActivePage={setActivePage} />
                            
-                           {/* Payments: Available for both Admin and Agency Admin */}
                            {(userRole === 'admin' || userRole === 'agency_admin') && (
                                <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
                            )}
 
-                           {/* Exclusive ACC Admin Features */}
                            {userRole === 'admin' && (
                                <>
-                                   <NavLink icon={<ScaleIcon />} label="DA Cases" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
-                                   <NavLink icon={<ShareIcon />} label="Info Sharing" page="info-sharing" activePage={activePage} setActivePage={setActivePage} />
-                                   <NavLink icon={<ServerIcon />} label="Connections" page="api-mgmt" activePage={activePage} setActivePage={setActivePage} />
+                                   <NavLink icon={<ScaleIcon />} label="DA" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
+                                   <NavLink icon={<ShareIcon />} label="Sharing" page="info-sharing" activePage={activePage} setActivePage={setActivePage} />
+                                   <NavLink icon={<ServerIcon />} label="APIs" page="api-mgmt" activePage={activePage} setActivePage={setActivePage} />
                                </>
                            )}
                            
-                           <NavLink icon={<ChartBarIcon />} label="Analytics" page="analytics" activePage={activePage} setActivePage={setActivePage} />
+                           <NavLink icon={<ChartBarIcon />} label="Stats" page="analytics" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Reports" page="reports" activePage={activePage} setActivePage={setActivePage} />
-                           
-                           {/* Audit Logs */}
-                           <NavLink icon={<HistoryIcon />} label="Audit Logs" page="audit" activePage={activePage} setActivePage={setActivePage} />
+                           <NavLink icon={<HistoryIcon />} label="Logs" page="audit" activePage={activePage} setActivePage={setActivePage} />
                         </ul>
                     </nav>
 
                     {/* Right Section: Actions and User Menu */}
-                    <div className="flex items-center space-x-5">
-                        {/* SWITCH VIEW BUTTON */}
+                    <div className="flex items-center space-x-3 ml-4 shrink-0">
                         {onSwitchView && (
                             <button 
                                 onClick={onSwitchView}
-                                className="text-xs font-bold text-primary border border-primary px-3 py-1 rounded hover:bg-blue-50 transition"
+                                className="hidden lg:block text-[10px] font-bold text-primary border border-primary px-2 py-1 rounded hover:bg-blue-50 transition whitespace-nowrap"
                             >
                                 File My Declaration
                             </button>
@@ -115,16 +108,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                         
                         <div className="relative" ref={profileRef}>
                             <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center space-x-2">
-                                <div className="w-10 h-10 rounded-full bg-text-main text-white flex items-center justify-center font-bold">
+                                <div className="w-8 h-8 rounded-full bg-text-main text-white flex items-center justify-center font-bold text-xs">
                                     {userRole === 'admin' ? 'CA' : 'AD'}
                                 </div>
-                                <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-text-main">{adminName}</p>
-                                    <p className="text-xs text-text-secondary">{adminRoleLabel}</p>
+                                <div className="hidden xl:block text-left">
+                                    <p className="text-xs font-semibold text-text-main">{adminName}</p>
+                                    <p className="text-[10px] text-text-secondary">{adminRoleLabel}</p>
                                 </div>
                             </button>
                             {profileOpen && (
-                                <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 p-1">
+                                <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 p-1 z-50">
                                     <button 
                                         onClick={onLogout}
                                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"

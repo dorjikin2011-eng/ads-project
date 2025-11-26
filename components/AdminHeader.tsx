@@ -51,14 +51,17 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
 
     // Simulated Names based on role
     const adminName = userRole === 'admin' ? 'Tashi Dorji' : 'Karma Wangdi';
-    const adminRoleLabel = userRole === 'admin' ? 'CADA Administrator' : 'ADA - Ministry of Finance';
+    const adminRoleLabel = userRole === 'admin' ? 'CADA' : 'ADA - Ministry of Finance';
+
+    // Header titles (Keep or remove based on previous step, ensuring consistency)
+    // Previous step removed titles next to logo, so we keep them removed here.
 
     return (
         <header className="bg-white shadow-md sticky top-0 z-40 border-b-4 border-text-main">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     
-                    {/* Left Section: Logo Only (Removed Titles) */}
+                    {/* Left Section: Logo Only */}
                     <div className="flex items-center">
                         <PngLogoIcon />
                     </div>

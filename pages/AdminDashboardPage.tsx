@@ -75,7 +75,7 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
     }, [userRole]);
 
     const availableStatuses = ['All', ...Object.values(DeclarationStatus)];
-    const roleTitle = userRole === 'admin' ? 'CADA Oversight Dashboard' : 'ADA Dashboard'; // CHANGED
+    const roleTitle = userRole === 'admin' ? 'CADA Oversight Dashboard' : 'ADA Dashboard';
 
     return (
     <>
@@ -135,10 +135,7 @@ const OverviewContent = ({ onViewDetails, userRole }: { onViewDetails: (id: stri
 
         <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-text-main">
-                    {userRole === 'admin' ? 'Schedule I Declarations' : 'Schedule II Declarations'}
-                    <span className="text-sm font-normal text-text-secondary ml-2"> ({filteredSubmissions.length} records found) </span>
-                </h2>
+                <h2 className="text-xl font-semibold text-text-main"> {userRole === 'admin' ? 'Schedule I Declarations' : 'Schedule II Declarations'} <span className="text-sm font-normal text-text-secondary ml-2"> ({filteredSubmissions.length} records found) </span> </h2>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -176,7 +173,7 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
       case 'users': return <UserManagementPage userRole={userRole} onFileOnBehalf={handleFileOnBehalf} />;
       case 'verification': return <AdminVerificationPage userRole={userRole} preSelectedId={selectedSubmissionId} />;
       case 'da-cases': return <DACasesPage />;
-      case 'payments': return <PaymentConsolePage />;
+      case 'payments': return <PaymentConsolePage userRole={userRole} />; // FIXED: Passing userRole prop
       case 'info-sharing': return <InfoSharingPage />;
       case 'api-mgmt': return <ApiManagementPage />;
       case 'analytics': return <AdminAnalyticsPage />;

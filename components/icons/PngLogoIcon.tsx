@@ -1,10 +1,18 @@
 import React from 'react';
+import logo from '../assets/acclogo.png'; // TypeScript will recognize this after declarations.d.ts
 
-const PngLogoIcon = () => (
-  <img
-    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA4IAAAGlCAYAAACvP0jGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDE0IDc5LjE1MTQ4MSwgMjAxMy8wMy8xMy0xMjowOToxNSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIChXaW5kb3dzKSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo0NEJGRTlFNTJBNDIxMUVDQjkxOTk1REIxMDdGRjM5NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo0NEJGRTlFNjJBNDIxMUVDQjkxOTk1REIxMDdGRjM5NyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjQ0QkZFOUUzMkE0MjExRUNCOTE5OTVEQjEwN0ZGMzk3IiBzdFJlZjpkb2N1dWVudElEPSJ4bXAuZGlkOjQ0QkZFOUU0MkE0MjExRUNCOTE5OTVEQjEwN0ZGMzk3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+"
-    className="h-12 w-auto"
-  />
-);
+const PngLogoIcon = () => {
+  return (
+    <img
+      src={logo}
+      style={{
+        width: '100%',      // responsive width
+        maxWidth: '150px',  // maximum width
+        height: 'auto',     // maintain aspect ratio
+        display: 'block'    // remove extra bottom spacing
+      }}
+    />
+  );
+};
 
 export default PngLogoIcon;

@@ -12,7 +12,7 @@ import PlusIcon from '../../components/icons/PlusIcon';
 
 interface AccessRequest {
     id: string;
-    department: string;
+    department: string; // DoPS, DoI, DARe, Public
     requestorName: string;
     targetOfficial: string;
     targetId: string;
@@ -20,8 +20,8 @@ interface AccessRequest {
     reason: string;
     requestDate: string;
     status: 'Pending' | 'Exported' | 'Denied';
-    accessLevel: 'Excel Export';
-    sourceMode?: 'System' | 'Hard Copy' | 'Email';
+    accessLevel: 'Excel Export' | 'Public View';
+    sourceMode?: 'System' | 'Hard Copy' | 'Email' | 'Public Application';
 }
 
 interface OutboundForward {
@@ -38,6 +38,7 @@ const initialRequests: AccessRequest[] = [
     { id: 'REQ-24-101', department: 'DoI (Investigation)', requestorName: 'Sr. Investigator Tashi', targetOfficial: 'Dasho Pema', targetId: '99887766', caseReference: 'CASE-2024-88', reason: 'Investigation of active case.', requestDate: '2024-03-10', status: 'Pending', accessLevel: 'Excel Export', sourceMode: 'System' },
     { id: 'REQ-24-102', department: 'DoPS (Complaint Enrichment)', requestorName: 'Officer Karma', targetOfficial: 'H.E. Lyonpo Dorji', targetId: '11223344', caseReference: 'CE-2024-12', reason: 'Enrichment of complaint #123.', requestDate: '2024-03-09', status: 'Pending', accessLevel: 'Excel Export', sourceMode: 'Email' },
     { id: 'REQ-24-098', department: 'DARe (Intel Gathering)', requestorName: 'Analyst Ugyen', targetOfficial: 'Mr. Tashi Wangmo', targetId: '55667788', caseReference: 'INT-2023-55', reason: 'Intelligence gathering.', requestDate: '2024-03-01', status: 'Exported', accessLevel: 'Excel Export', sourceMode: 'Hard Copy' },
+    { id: 'REQ-PUB-001', department: 'Public Applicant', requestorName: 'Sangay Dorji (CID: 115...)', targetOfficial: 'Dasho Pema', targetId: '99887766', caseReference: 'ANNEX-V', reason: 'Public Scrutiny Request', requestDate: '2024-03-15', status: 'Pending', accessLevel: 'Public View', sourceMode: 'Public Application' },
 ];
 
 const initialOutbound: OutboundForward[] = [
@@ -50,6 +51,7 @@ const InfoSharingPage = () => {
     
     // Incoming State
     const [requests, setRequests] = useState<AccessRequest[]>(initialRequests);
+    const [filter, setFilter] = useState<'All' | 'Pending' | 'Processed'>('All');
     const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
     const [isActionModalOpen, setActionModalOpen] = useState(false);
     const [actionComment, setActionComment] = useState('');
@@ -70,12 +72,17 @@ const InfoSharingPage = () => {
     const [isForwardModalOpen, setForwardModalOpen] = useState(false);
     const [forwardTarget, setForwardTarget] = useState('DoPS (IVS)');
 
-    // --- STATS CALCULATION (FIXED: Added missing variables) ---
+    // Stats
     const pendingCount = requests.filter(r => r.status === 'Pending').length;
     const approvedCount = requests.filter(r => r.status === 'Exported').length;
     const outboundCount = outboundLogs.length;
 
-    // Handlers
+    const filteredRequests = requests.filter(req => {
+        if (filter === 'Pending') return req.status === 'Pending';
+        if (filter === 'Processed') return req.status !== 'Pending';
+        return true;
+    });
+
     const handleActionClick = (req: AccessRequest) => {
         setSelectedRequest(req);
         setActionComment('');
@@ -84,15 +91,12 @@ const InfoSharingPage = () => {
 
     const processRequest = (status: 'Exported' | 'Denied') => {
         if (!selectedRequest) return;
-        
         const updatedRequests = requests.map(req => 
-            req.id === selectedRequest.id 
-                ? { ...req, status: status } 
-                : req
+            req.id === selectedRequest.id ? { ...req, status: status } : req
         );
         setRequests(updatedRequests);
         setActionModalOpen(false);
-        if (status === 'Exported') alert("Declaration data exported to Excel and marked as shared.");
+        if (status === 'Exported') alert(selectedRequest.sourceMode === 'Public Application' ? "Public Access Granted. Logged in audit trail." : "Declaration data exported to Excel and marked as shared.");
     };
 
     const handleGenerateForward = () => {
@@ -101,7 +105,7 @@ const InfoSharingPage = () => {
             targetDept: forwardTarget,
             title: `Penalty List for ${forwardTarget}`,
             dateSent: new Date().toISOString().split('T')[0],
-            count: 15, // Mock count
+            count: 15, 
             reason: forwardTarget === 'DoPS (IVS)' ? 'For IVS Record' : 'For Audit Follow-up',
             status: 'Sent (Excel)'
         };
@@ -114,15 +118,15 @@ const InfoSharingPage = () => {
         e.preventDefault();
         const newReq: AccessRequest = {
             id: `MAN-REQ-${Math.floor(Math.random() * 1000)}`,
-            department: newLog.department,
+            department: newLog.sourceMode === 'Public Application' ? 'Public Applicant' : newLog.department,
             requestorName: newLog.requestorName,
             targetOfficial: newLog.targetOfficial,
             targetId: newLog.targetId,
-            caseReference: 'MANUAL-LOG',
+            caseReference: newLog.sourceMode === 'Public Application' ? 'ANNEX-V' : 'MANUAL-LOG',
             reason: newLog.reason,
             requestDate: new Date().toISOString().split('T')[0],
             status: 'Pending',
-            accessLevel: 'Excel Export',
+            accessLevel: newLog.sourceMode === 'Public Application' ? 'Public View' : 'Excel Export',
             sourceMode: newLog.sourceMode as any
         };
         setRequests([newReq, ...requests]);
@@ -136,23 +140,26 @@ const InfoSharingPage = () => {
             <Modal isOpen={isActionModalOpen} onClose={() => setActionModalOpen(false)} title="Process Data Request">
                 <div className="space-y-4">
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm">
-                        <p><strong>Source:</strong> <span className="bg-blue-100 text-blue-800 px-2 rounded text-xs">{selectedRequest?.sourceMode}</span></p>
-                        <p><strong>Dept:</strong> {selectedRequest?.department}</p>
+                        <p><strong>Source:</strong> <span className={`px-2 rounded text-xs ${selectedRequest?.sourceMode === 'Public Application' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>{selectedRequest?.sourceMode}</span></p>
+                        <p><strong>Requestor:</strong> {selectedRequest?.requestorName} ({selectedRequest?.department})</p>
                         <p><strong>Target:</strong> {selectedRequest?.targetOfficial} ({selectedRequest?.targetId})</p>
                         <p><strong>Reason:</strong> {selectedRequest?.reason}</p>
                     </div>
-                    <p className="text-xs text-gray-500">Action: Generate Excel file of Asset Declaration.</p>
+                    <p className="text-xs text-gray-500">Action: {selectedRequest?.sourceMode === 'Public Application' ? 'Approve Public Viewing Access (In-Person)' : 'Generate Excel file of Asset Declaration'}.</p>
                     
-                    <textarea className="w-full border rounded-md p-2 text-sm" rows={2} placeholder="Remarks..." value={actionComment} onChange={(e) => setActionComment(e.target.value)}></textarea>
+                    <textarea className="w-full border rounded-md p-2 text-sm" rows={2} placeholder="Remarks / Decision Note..." value={actionComment} onChange={(e) => setActionComment(e.target.value)}></textarea>
 
                     <div className="flex justify-end gap-3 pt-2">
                         <button onClick={() => processRequest('Denied')} className="px-4 py-2 bg-red-100 text-red-700 rounded-md text-sm">Deny</button>
-                        <button onClick={() => processRequest('Exported')} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm flex items-center"><DocumentIcon className="w-4 h-4 mr-2" /> Export Excel & Close</button>
+                        <button onClick={() => processRequest('Exported')} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm flex items-center">
+                            <CheckIcon className="w-4 h-4 mr-2" /> 
+                            {selectedRequest?.sourceMode === 'Public Application' ? 'Grant Access' : 'Export & Close'}
+                        </button>
                     </div>
                 </div>
             </Modal>
 
-            {/* Manual Log Modal */}
+            {/* Manual Log Modal - UPDATED */}
             <Modal isOpen={isLogModalOpen} onClose={() => setLogModalOpen(false)} title="Log Manual Request">
                 <form onSubmit={handleLogSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -161,20 +168,25 @@ const InfoSharingPage = () => {
                             <select className="w-full border rounded p-2 text-sm" value={newLog.sourceMode} onChange={(e) => setNewLog({...newLog, sourceMode: e.target.value})}>
                                 <option>Hard Copy</option>
                                 <option>Email</option>
+                                <option>Public Application (Annexure V)</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">Department</label>
-                            <select className="w-full border rounded p-2 text-sm" value={newLog.department} onChange={(e) => setNewLog({...newLog, department: e.target.value})}>
-                                <option>DoI (Investigation)</option>
-                                <option>DoPS (Complaint Enrichment)</option>
-                                <option>DARe (Intel Gathering)</option>
-                                <option>Other</option>
-                            </select>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Department / Type</label>
+                            {newLog.sourceMode === 'Public Application' ? (
+                                <input type="text" disabled value="Public Applicant" className="w-full border rounded p-2 text-sm bg-gray-100" />
+                            ) : (
+                                <select className="w-full border rounded p-2 text-sm" value={newLog.department} onChange={(e) => setNewLog({...newLog, department: e.target.value})}>
+                                    <option>DoI (Investigation)</option>
+                                    <option>DoPS (Complaint Enrichment)</option>
+                                    <option>DARe (Intel Gathering)</option>
+                                    <option>Other</option>
+                                </select>
+                            )}
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Requestor Name & Designation</label>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">{newLog.sourceMode === 'Public Application' ? 'Applicant Name & CID' : 'Requestor Name & Designation'}</label>
                         <input type="text" required className="w-full border rounded p-2 text-sm" value={newLog.requestorName} onChange={(e) => setNewLog({...newLog, requestorName: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -188,12 +200,14 @@ const InfoSharingPage = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-700 mb-1">Reason / Case Ref</label>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Reason / Justification</label>
                         <textarea className="w-full border rounded p-2 text-sm" rows={3} required value={newLog.reason} onChange={(e) => setNewLog({...newLog, reason: e.target.value})}></textarea>
                     </div>
                     
                     <div className="border-t pt-4 mt-2">
-                        <label className="block text-xs font-bold text-gray-700 mb-2">Attach Scan/Screenshot (Optional)</label>
+                        <label className="block text-xs font-bold text-gray-700 mb-2">
+                            {newLog.sourceMode === 'Public Application' ? 'Attach Scanned Annexure V Form' : 'Attach Scan/Screenshot (Optional)'}
+                        </label>
                         <input type="file" className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
                     </div>
 
@@ -223,7 +237,7 @@ const InfoSharingPage = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-text-main">Information Sharing Console</h1>
-                    <p className="text-text-secondary mt-1">Manage data sharing with DoPS, DoI, DARe, and RAA.</p>
+                    <p className="text-text-secondary mt-1">Manage data sharing with DoPS, DoI, DARe, and Public.</p>
                 </div>
                 <div className="flex gap-2 mt-4 md:mt-0">
                     <button onClick={() => setActiveTab('Incoming')} className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'Incoming' ? 'bg-primary text-white' : 'bg-white text-gray-600 border'}`}>Incoming Requests</button>
@@ -254,12 +268,12 @@ const InfoSharingPage = () => {
                             <table className="w-full text-left">
                                 <thead className="bg-gray-100 border-b"><tr><th className="p-4 text-sm">Requestor</th><th className="p-4 text-sm">Target</th><th className="p-4 text-sm">Purpose</th><th className="p-4 text-sm">Status</th><th className="p-4 text-sm text-right">Action</th></tr></thead>
                                 <tbody className="divide-y">
-                                    {requests.map((req) => (
+                                    {filteredRequests.map((req) => (
                                         <tr key={req.id} className="hover:bg-gray-50">
                                             <td className="p-4 text-sm font-medium">
                                                 {req.department}
                                                 <br/><span className="text-xs text-gray-500">{req.requestorName}</span>
-                                                {req.sourceMode && <span className="block mt-1 text-[10px] bg-gray-100 text-gray-600 px-1 rounded w-fit">{req.sourceMode}</span>}
+                                                {req.sourceMode && <span className={`block mt-1 text-[10px] px-1 rounded w-fit ${req.sourceMode === 'Public Application' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'}`}>{req.sourceMode}</span>}
                                             </td>
                                             <td className="p-4 text-sm">{req.targetOfficial}</td>
                                             <td className="p-4 text-sm">{req.reason}</td>

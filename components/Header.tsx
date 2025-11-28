@@ -16,8 +16,8 @@ interface HeaderProps {
     setActivePage: (page: string) => void;
     onLogout: () => void;
     profilePicture: string;
-    userRole?: UserRole; // New Prop
-    onSwitchView?: () => void; // New Prop
+    userRole?: UserRole;
+    onSwitchView?: () => void;
 }
 
 const NavLink: React.FC<{ label: string; page: string; activePage: string; setActivePage: (page: string) => void }> = ({ label, page, activePage, setActivePage }) => (
@@ -78,9 +78,10 @@ const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, onLogout, pr
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     
-                    {/* Left Section: Logo and Title */}
+                    {/* Left Section: Logo & Title */}
                     <div className="flex items-center">
                         <PngLogoIcon />
+                        <span className="ml-3 font-bold text-text-main text-lg hidden md:block">Online Asset Declaration System</span>
                     </div>
 
                     {/* Center Section: Main Navigation */}

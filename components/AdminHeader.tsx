@@ -22,7 +22,6 @@ interface AdminHeaderProps {
     onSwitchView?: () => void;
 }
 
-// Reduced padding (px-2 instead of px-3) and text size for compactness
 const NavLink: React.FC<{ label: string; page: string; activePage: string; icon: React.ReactNode; setActivePage: (page: string) => void }> = ({ label, page, activePage, icon, setActivePage }) => (
     <li className="shrink-0">
         <button 
@@ -51,7 +50,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Simulated Names
     const adminName = userRole === 'admin' ? 'Tashi Dorji' : 'Karma Wangdi';
     const adminRoleLabel = userRole === 'admin' ? 'CADA' : 'ADA - Ministry of Finance';
 
@@ -60,12 +58,13 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
             <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
                     
-                    {/* Left Section: Logo */}
+                    {/* Left Section: Logo & Title */}
                     <div className="flex items-center shrink-0 mr-4">
                         <PngLogoIcon />
+                        <span className="ml-3 font-bold text-text-main text-sm hidden lg:block">Online Asset Declaration System</span>
                     </div>
 
-                    {/* Center Section: Main Navigation (Scrollable if needed) */}
+                    {/* Center Section: Main Navigation */}
                     <nav className="flex-1 overflow-x-auto no-scrollbar">
                         <ul className="flex items-center space-x-1 h-full">
                            <NavLink icon={<DashboardIcon />} label="Home" page="dashboard" activePage={activePage} setActivePage={setActivePage} />

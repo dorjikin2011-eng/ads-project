@@ -47,15 +47,16 @@ const HoAHeader: React.FC<HoAHeaderProps> = ({ activePage, setActivePage, onLogo
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     
-                    {/* Left Section: Logo Only */}
+                    {/* Left Section: Logo & Title */}
                     <div className="flex items-center">
                         <PngLogoIcon />
+                        <span className="ml-3 font-bold text-text-main text-lg hidden md:block">Online Asset Declaration System</span>
                     </div>
 
                     {/* Center Section: Main Navigation */}
                     <nav className="hidden md:flex">
                         <ul className="flex items-center space-x-2">
-                           <NavLink icon={<DashboardIcon />} label="Executive Overview" page="overview" activePage={activePage} setActivePage={setActivePage} />
+                           <NavLink icon={<DashboardIcon />} label="Overview" page="overview" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<DocumentReportIcon />} label="Report Approval" page="approval" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<UserGroupIcon />} label="Staff List" page="staff" activePage={activePage} setActivePage={setActivePage} />
                            <NavLink icon={<UserAddIcon />} label="Admin Nominations" page="nominations" activePage={activePage} setActivePage={setActivePage} />

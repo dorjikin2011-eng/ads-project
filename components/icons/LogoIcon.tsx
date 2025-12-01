@@ -1,9 +1,11 @@
-import React from 'react';
+import React from "react";
+
 const LogoIcon = () => (
-<svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
-<path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-<path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-<path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-</svg>
+  <img 
+    src="/acclogo.png" 
+    alt="" 
+    className="w-10 h-10 object-contain"
+  />
 );
+
 export default LogoIcon;

@@ -1,14 +1,19 @@
-import React from "react";
+import React from 'react';
 
-const PngLogoIcon = () => {
+interface PngLogoIconProps {
+  className?: string;
+}
+
+const PngLogoIcon: React.FC<PngLogoIconProps> = ({ className }) => {
   return (
     <img
       src="/acclogo.png"
-      alt=""
-      className="w-24 h-24 sm:w-20 sm:h-20 object-contain block"
+      className={className} // apply passed className
+      alt="ACC Logo"
     />
   );
 };
 
 export default PngLogoIcon;
+
 

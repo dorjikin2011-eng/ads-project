@@ -79,10 +79,12 @@ const Header: React.FC<HeaderProps> = ({ activePage, setActivePage, onLogout, pr
                 <div className="flex items-center justify-between h-20">
                     
                     {/* Left Section: Logo & Title */}
-                    <div className="flex items-center">
-                        <PngLogoIcon />
-                        <span className="ml-3 font-bold text-text-main text-lg hidden md:block">Online Asset Declaration System</span>
-                    </div>
+                    <div className="flex items-center shrink-0 mr-4">
+    <PngLogoIcon />
+    <span className="ml-3 font-bold text-text-main text-sm block w-[140px]">
+        Online Asset Declaration System
+    </span>
+</div>
 
                     {/* Center Section: Main Navigation */}
                     <nav className="hidden md:flex">

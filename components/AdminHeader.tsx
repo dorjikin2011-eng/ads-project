@@ -60,9 +60,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                     
                     {/* Left Section: Logo & Title */}
                     <div className="flex items-center shrink-0 mr-4">
-                        <PngLogoIcon />
-                        <span className="ml-3 font-bold text-text-main text-sm hidden lg:block">Online Asset Declaration System</span>
-                    </div>
+    <PngLogoIcon />
+    <span className="ml-3 font-bold text-text-main text-sm block w-[140px]">
+        Online Asset Declaration System
+    </span>
+</div>
 
                     {/* Center Section: Main Navigation */}
                     <nav className="flex-1 overflow-x-auto no-scrollbar">

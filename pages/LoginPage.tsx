@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import LogoIcon from '../components/icons/LogoIcon';
 import PngLogoIcon from '../components/icons/PngLogoIcon';
 import { UserRole } from '../types';
 
@@ -35,10 +34,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       {/* Logo Header */}
       <div className="mb-4 text-center">
         <div className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2">
-          <PngLogoIcon />
+          <div className="flex-shrink-0">
+            <PngLogoIcon className="w-12 h-12 sm:w-16 sm:h-16" />
+          </div>
           <div className="text-center sm:text-left">
-            <span className="block text-lg sm:text-xl font-semibold text-text-main">Online Asset</span>
-            <span className="block text-lg sm:text-xl font-semibold text-text-main">Declaration System</span>
+            <span className="block text-base sm:text-lg font-semibold text-text-main leading-tight">Online Asset</span>
+            <span className="block text-base sm:text-lg font-semibold text-text-main leading-tight">Declaration System</span>
           </div>
         </div>
       </div>
@@ -131,4 +132,5 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 };
 
 export default LoginPage;
+
 

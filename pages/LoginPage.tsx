@@ -33,24 +33,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 font-sans">
       
       {/* Logo Header */}
-      <div className="mb-6 text-center">
-        <div className="flex flex-col sm:flex-row items-center justify-center mb-3 sm:space-x-4 space-y-2 sm:space-y-0">
+      <div className="mb-4 text-center">
+        <div className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2">
           <PngLogoIcon />
           <div className="text-center sm:text-left">
-            <span className="block text-xl sm:text-2xl font-semibold text-text-main">Online Asset</span>
-            <span className="block text-xl sm:text-2xl font-semibold text-text-main">Declaration System</span>
+            <span className="block text-lg sm:text-xl font-semibold text-text-main">Online Asset</span>
+            <span className="block text-lg sm:text-xl font-semibold text-text-main">Declaration System</span>
           </div>
         </div>
       </div>
 
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-md space-y-2">
         
         {/* NDI Login Button */}
         <button 
           onClick={handleNDILogin}
-          className="w-full bg-[#1a4d4d] hover:bg-[#133a3a] text-white font-bold py-3.5 px-4 rounded-lg shadow-md flex items-center justify-center transition duration-200"
+          className="w-full bg-[#1a4d4d] hover:bg-[#133a3a] text-white font-bold py-3 px-4 rounded-lg shadow-md flex items-center justify-center transition duration-200"
         >
-          <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
           LOGIN WITH BHUTAN NDI
         </button>
 
@@ -62,8 +64,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         </div>
 
         {/* Standard Login Card */}
-        <div className="bg-yellow-400 rounded-xl shadow-xl overflow-hidden border border-yellow-300">
-          <div className="bg-yellow-500 p-6 text-center">
+        <div className="bg-white rounded-xl shadow-xl border-2 border-yellow-400 overflow-hidden">
+          {/* Top bar */}
+          <div className="bg-yellow-400 p-5 text-center">
             <h2 className="text-2xl font-extrabold text-white tracking-wide">LOGIN</h2>
             <p className="text-yellow-100 text-sm mt-1 font-medium">{getRoleLabel(loginType)} Portal</p>
           </div>
@@ -71,10 +74,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <div className="p-6">
             {/* Role Switcher Tabs */}
             <div className="flex flex-wrap gap-1 mb-4 justify-center">
-              <button onClick={() => setLoginType('official')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'official' ? 'bg-yellow-600 text-white border-yellow-600' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>Declarant</button>
-              <button onClick={() => setLoginType('agency_admin')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'agency_admin' ? 'bg-yellow-600 text-white border-yellow-600' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>ADA</button>
-              <button onClick={() => setLoginType('hoa')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'hoa' ? 'bg-yellow-600 text-white border-yellow-600' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>HoA</button>
-              <button onClick={() => setLoginType('admin')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'admin' ? 'bg-yellow-600 text-white border-yellow-600' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>CADA</button>
+              <button onClick={() => setLoginType('official')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'official' ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>Declarant</button>
+              <button onClick={() => setLoginType('agency_admin')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'agency_admin' ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>ADA</button>
+              <button onClick={() => setLoginType('hoa')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'hoa' ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>HoA</button>
+              <button onClick={() => setLoginType('admin')} className={`px-3 py-1 text-xs font-bold rounded-full border ${loginType === 'admin' ? 'bg-yellow-500 text-white border-yellow-500' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}>CADA</button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,19 +110,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
               <button
                 type="submit"
-                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition transform active:scale-95 mt-3"
+                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition transform active:scale-95 mt-3"
               >
                 LOG IN
               </button>
               
               <div className="text-center mt-3">
-                <a href="#" className="text-sm text-yellow-100 hover:text-yellow-300 transition">Forgot your password?</a>
+                <a href="#" className="text-sm text-yellow-600 hover:text-yellow-700 transition">Forgot your password?</a>
               </div>
             </form>
           </div>
         </div>
 
-        <div className="text-center text-gray-400 text-xs mt-6">
+        <div className="text-center text-gray-400 text-xs mt-4">
           <p>&copy; {new Date().getFullYear()} Anti-Corruption Commission of Bhutan.</p>
         </div>
       </div>
@@ -128,3 +131,4 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 };
 
 export default LoginPage;
+

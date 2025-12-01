@@ -37,9 +37,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-xl p-8 border-t-4 border-primary">
           <div className="flex flex-col items-center mb-6">
-            <div className={`rounded-full p-3 mb-4 ${loginType !== 'official' ? 'bg-text-main' : 'bg-primary'}`}>
-              <LogoIcon />
-            </div>
+            {/* Old circle wrapper */}
+{/* <div className={`rounded-full p-3 mb-4 ${loginType !== 'official' ? 'bg-text-main' : 'bg-primary'}`}>
+    <LogoIcon />
+</div> */}
+
+{/* New — logo only */}
+<div className="mb-4">
+    <LogoIcon />
+</div>
             <h1 className="text-2xl font-bold text-text-main text-center">Online Asset Declaration System</h1>
             <p className="text-text-secondary mt-2 font-medium text-sm uppercase tracking-wide text-center">
                 {getRoleLabel(loginType)} Portal

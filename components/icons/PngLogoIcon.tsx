@@ -8,12 +8,17 @@ const PngLogoIcon: React.FC<PngLogoIconProps> = ({ className }) => {
   return (
     <img
       src="/acclogo.png"
-      className={className} // apply passed className
+      className={className}
+      style={{
+        objectFit: 'contain',
+        height: 'auto',
+      }}
       alt="ACC Logo"
     />
   );
 };
 
 export default PngLogoIcon;
+
 
 

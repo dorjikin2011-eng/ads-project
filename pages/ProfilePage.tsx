@@ -1,4 +1,14 @@
-// ... imports ...
+// ProfilePage.tsx
+// ------------------------------------------------------------
+// FULLY UPDATED VERSION WITH:
+// - Working Agency Details
+// - Full Address Details
+// - Family
+// - Assets
+// - Liabilities
+// - Expenditures
+// ------------------------------------------------------------
+
 import React, { useState, useEffect, useRef } from 'react';
 import PlusIcon from '../components/icons/PlusIcon';
 import TrashIcon from '../components/icons/TrashIcon';
@@ -7,70 +17,870 @@ import CameraIcon from '../components/icons/CameraIcon';
 // Simple ID generator
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-// ... (Interfaces and Mock Data stay the same) ...
-interface FamilyMember { id: number | string; name: string; relationship: string; occupation: string; }
-interface ProfileData { personal: { fullName: string; officialId: string; dob: string; email: string; phone: string; }; presentAddress: { village: string; gewog: string; dzongkhag: string; houseNo: string; }; permanentAddress: { village: string; gewog: string; dzongkhag: string; houseNo: string; }; family: FamilyMember[]; }
-const initialProfileData: ProfileData = { personal: { fullName: 'Kinley Wangchuk', officialId: '12345', dob: '1985-06-15', email: 'kinley.w@gov.bt', phone: '17123456' }, presentAddress: { village: 'Olakha', gewog: 'Thimphu Thromde', dzongkhag: 'Thimphu', houseNo: 'A-123' }, permanentAddress: { village: 'Punakha', gewog: 'Chubu', dzongkhag: 'Punakha', houseNo: 'B-45' }, family: [ { id: 1, name: 'Pema Lhamo', relationship: 'Spouse', occupation: 'Teacher' }, { id: 2, name: 'Jigme Dorji', relationship: 'Son', occupation: 'Student' } ] };
-
-// ... (ProfileField and ProfileSection components stay the same) ...
-const ProfileField = ({ label, value, isEditing, onChange, type = 'text', name = '' }: { label: string; value: any; isEditing?: boolean; onChange?: (e: any) => void; type?: string; name?: string }) => ( <div> <label className="block text-sm font-medium text-text-secondary">{label}</label> {isEditing ? ( <input type={type} name={name} value={value} onChange={onChange} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-accent focus:border-transparent transition text-sm" /> ) : ( <p className="mt-1 text-text-main font-medium">{value || '-'}</p> )} </div> );
-interface ProfileSectionProps { title: string; isEditing: boolean; onEdit: () => void; onSave: () => void; onCancel: () => void; children: React.ReactNode; }
-const ProfileSection: React.FC<ProfileSectionProps> = ({ title, children, isEditing, onEdit, onSave, onCancel }) => ( <div className="bg-white rounded-lg shadow-md p-6"> <div className="flex justify-between items-center mb-4"> <h2 className="text-xl font-semibold text-text-main">{title}</h2> {!isEditing && ( <button onClick={onEdit} className="text-sm font-medium text-accent hover:underline"> Edit </button> )} </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {children} </div> {isEditing && ( <div className="mt-6 flex justify-end space-x-3"> <button onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-text-main hover:bg-gray-50 transition text-sm"> Cancel </button> <button onClick={onSave} className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm"> Save Changes </button> </div> )} </div> );
-
-interface ProfilePageProps {
-    profilePicture: string;
-    setProfilePicture: (url: string) => void;
+// ------------------ INTERFACES ----------------------------
+interface FamilyMember {
+  id: string;
+  name: string;
+  relationship: string;
+  occupation: string;
 }
 
-const ProfilePage: React.FC<ProfilePageProps> = ({ profilePicture, setProfilePicture }) => {
-    // ... (State definitions stay the same) ...
-    const [profile, setProfile] = useState<ProfileData>(initialProfileData);
-    const [tempProfile, setTempProfile] = useState<ProfileData>(initialProfileData);
-    const [isPersonalEditing, setPersonalEditing] = useState(false);
-    const [isAddressEditing, setAddressEditing] = useState(false);
-    const [isFamilyEditing, setFamilyEditing] = useState(false);
-    const [sameAsPresent, setSameAsPresent] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+interface AssetItem {
+  id: string;
+  type: string;
+  description: string;
+  value: string;
+}
 
-    // ... (Keep handlePictureUploadClick, handlePictureChange, handlePersonalEdit/Save/Cancel/Change, handleAddressEdit/Save/Cancel/Change, useEffect, handleFamilyEdit/Save/Cancel/Change exactly as they were) ...
-    const handlePictureUploadClick = () => { fileInputRef.current?.click(); };
-    const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onload = (loadEvent) => { if (typeof loadEvent.target?.result === 'string') { setProfilePicture(loadEvent.target.result); } }; reader.readAsDataURL(file); } };
-    const handlePersonalEdit = () => { setTempProfile(profile); setPersonalEditing(true); };
-    const handlePersonalSave = () => { setProfile(tempProfile); setPersonalEditing(false); };
-    const handlePersonalCancel = () => { setTempProfile(profile); setPersonalEditing(false); };
-    const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setTempProfile(prev => ({ ...prev, personal: { ...prev.personal, [name]: value } })); };
-    const handleAddressEdit = () => { setTempProfile(profile); setSameAsPresent(JSON.stringify(profile.presentAddress) === JSON.stringify(profile.permanentAddress)); setAddressEditing(true); };
-    const handleAddressSave = () => { let finalProfile = { ...tempProfile }; if (sameAsPresent) { finalProfile = { ...finalProfile, permanentAddress: { ...finalProfile.presentAddress } }; } setProfile(finalProfile); setTempProfile(finalProfile); setAddressEditing(false); };
-    const handleAddressCancel = () => { setTempProfile(profile); setAddressEditing(false); };
-    const handleAddressChange = (section: 'presentAddress' | 'permanentAddress', e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; setTempProfile(prev => ({ ...prev, [section]: { ...prev[section], [name]: value } })); };
-    useEffect(() => { if(sameAsPresent && isAddressEditing) { setTempProfile(prev => ({ ...prev, permanentAddress: { ...prev.presentAddress } })); } }, [sameAsPresent, tempProfile.presentAddress, isAddressEditing])
-    const handleFamilyEdit = () => { setTempProfile(profile); setFamilyEditing(true); };
-    const handleFamilySave = () => { setProfile(tempProfile); setFamilyEditing(false); };
-    const handleFamilyCancel = () => { setTempProfile(profile); setFamilyEditing(false); };
-    const handleFamilyChange = (id: number | string, e: React.ChangeEvent<HTMLInputElement>) => { const { name, value } = e.target; const updatedFamily = tempProfile.family.map(member => member.id === id ? { ...member, [name]: value } : member ); setTempProfile(prev => ({ ...prev, family: updatedFamily })); };
+interface LiabilityItem {
+  id: string;
+  source: string;
+  amount: string;
+  remarks: string;
+}
 
-    // --- UPDATED FAMILY MEMBER HANDLERS ---
-    const addFamilyMember = () => {
-        const newMember = { id: generateId(), name: '', relationship: '', occupation: '' };
-        setTempProfile(prev => ({...prev, family: [...prev.family, newMember]}));
+interface ExpenditureItem {
+  id: string;
+  category: string;
+  amount: string;
+  remarks: string;
+}
+
+interface ProfileData {
+  personal: {
+    fullName: string;
+    officialId: string;
+    dob: string;
+    email: string;
+    phone: string;
+  };
+  agency: {
+    name: string;
+    department: string;
+    position: string;
+    officeAddress: string;
+  };
+  presentAddress: {
+    village: string;
+    gewog: string;
+    dzongkhag: string;
+    houseNo: string;
+  };
+  permanentAddress: {
+    village: string;
+    gewog: string;
+    dzongkhag: string;
+    houseNo: string;
+  };
+  family: FamilyMember[];
+  assets: AssetItem[];
+  liabilities: LiabilityItem[];
+  expenditures: ExpenditureItem[];
+}
+
+// ------------------ INITIAL DATA ----------------------------
+const initialProfileData: ProfileData = {
+  personal: {
+    fullName: 'Kinley Wangchuk',
+    officialId: '12345',
+    dob: '1985-06-15',
+    email: 'kinley.w@gov.bt',
+    phone: '17123456',
+  },
+  agency: {
+    name: 'Anti-Corruption Commission',
+    department: 'Prevention Division',
+    position: 'Chief Integrity Officer',
+    officeAddress: 'ACC Head Office, Thimphu',
+  },
+  presentAddress: {
+    village: 'Olakha',
+    gewog: 'Thimphu Thromde',
+    dzongkhag: 'Thimphu',
+    houseNo: 'A-123',
+  },
+  permanentAddress: {
+    village: 'Punakha',
+    gewog: 'Chubu',
+    dzongkhag: 'Punakha',
+    houseNo: 'B-45',
+  },
+  family: [
+    { id: '1', name: 'Pema Lhamo', relationship: 'Spouse', occupation: 'Teacher' },
+    { id: '2', name: 'Jigme Dorji', relationship: 'Son', occupation: 'Student' },
+  ],
+  assets: [],
+  liabilities: [],
+  expenditures: [],
+};
+
+// ---------------- COMPONENTS -------------------
+const ProfileField = ({
+  label, value, isEditing, onChange, type = 'text', name = '',
+}: any) => (
+  <div>
+    <label className="block text-sm font-medium text-text-secondary">{label}</label>
+    {isEditing ? (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-accent focus:border-transparent transition text-sm"
+      />
+    ) : (
+      <p className="mt-1 text-text-main font-medium">{value || '-'}</p>
+    )}
+  </div>
+);
+
+const ProfileSection = ({
+  title, children, isEditing, onEdit, onSave, onCancel,
+}: any) => (
+  <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-semibold text-text-main">{title}</h2>
+      {!isEditing && (
+        <button onClick={onEdit} className="text-sm font-medium text-accent hover:underline">
+          Edit
+        </button>
+      )}
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
+
+    {isEditing && (
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 border border-gray-300 rounded-md text-text-main hover:bg-gray-50 transition text-sm"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm"
+        >
+          Save Changes
+        </button>
+      </div>
+    )}
+  </div>
+);
+
+// ---------------- MAIN PROFILE PAGE -------------------
+interface Props {
+  profilePicture: string;
+  setProfilePicture: (url: string) => void;
+}
+
+const ProfilePage: React.FC<Props> = ({ profilePicture, setProfilePicture }) => {
+  const [profile, setProfile] = useState<ProfileData>(initialProfileData);
+  const [tempProfile, setTempProfile] = useState<ProfileData>(initialProfileData);
+
+  const [isPersonalEditing, setPersonalEditing] = useState(false);
+  const [isAgencyEditing, setAgencyEditing] = useState(false);
+  const [isAddressEditing, setAddressEditing] = useState(false);
+  const [isFamilyEditing, setFamilyEditing] = useState(false);
+  const [isAssetEditing, setAssetEditing] = useState(false);
+  const [isLiabilityEditing, setLiabilityEditing] = useState(false);
+  const [isExpenditureEditing, setExpenditureEditing] = useState(false);
+
+  const [sameAsPresent, setSameAsPresent] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ---------------- PROFILE PICTURE ----------------
+  const handlePictureUploadClick = () => fileInputRef.current?.click();
+  const handlePictureChange = (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      if (typeof evt.target?.result === 'string') {
+        setProfilePicture(evt.target.result);
+      }
     };
-    // ... (Keep removeFamilyMember as is) ...
-    const removeFamilyMember = (id: number | string) => { const updatedFamily = tempProfile.family.filter(member => member.id !== id); setTempProfile(prev => ({...prev, family: updatedFamily})); };
+    reader.readAsDataURL(file);
+  };
 
-    return (
-        <div>
-            <h1 className="text-3xl font-bold text-text-main mb-2">Your Profile</h1>
-            <p className="text-text-secondary mb-8">Manage your personal information, addresses, and family details.</p>
+  // ---------------- PERSONAL HANDLERS ----------------
+  const handleEdit = (setter: any) => { setTempProfile(profile); setter(true); };
+  const handleSave = (setter: any) => { setProfile(tempProfile); setter(false); };
+  const handleCancel = (setter: any) => { setTempProfile(profile); setter(false); };
 
-            <div className="space-y-8">
-                {/* ... (Keep JSX exactly as it was) ... */}
-                <div className="bg-white rounded-lg shadow-md p-6 flex items-center space-x-6"> <div className="relative group"> <img src={profilePicture} alt="Profile" className="w-24 h-24 rounded-full object-cover" /> <button onClick={handlePictureUploadClick} className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center rounded-full transition-opacity duration-300" aria-label="Upload new profile picture" > <CameraIcon className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> </button> <input type="file" ref={fileInputRef} onChange={handlePictureChange} accept="image/*" className="hidden" /> </div> <div> <h2 className="text-2xl font-bold text-text-main">{profile.personal.fullName}</h2> <p className="text-text-secondary">Official ID: {profile.personal.officialId}</p> </div> </div>
-                <ProfileSection title="Personal Details" isEditing={isPersonalEditing} onEdit={handlePersonalEdit} onSave={handlePersonalSave} onCancel={handlePersonalCancel} > <ProfileField label="Date of Birth" value={tempProfile.personal.dob} isEditing={isPersonalEditing} onChange={handlePersonalChange} name="dob" type="date" /> <ProfileField label="Email Address" value={tempProfile.personal.email} isEditing={isPersonalEditing} onChange={handlePersonalChange} name="email" type="email" /> <ProfileField label="Phone Number" value={tempProfile.personal.phone} isEditing={isPersonalEditing} onChange={handlePersonalChange} name="phone" /> </ProfileSection>
-                <ProfileSection title="Address Details" isEditing={isAddressEditing} onEdit={handleAddressEdit} onSave={handleAddressSave} onCancel={handleAddressCancel} > <h3 className="text-lg font-semibold text-text-main md:col-span-2">Present Address</h3> <ProfileField label="Village / Town" value={tempProfile.presentAddress.village} isEditing={isAddressEditing} onChange={e => handleAddressChange('presentAddress', e)} name="village" /> <ProfileField label="Gewog / Thromde" value={tempProfile.presentAddress.gewog} isEditing={isAddressEditing} onChange={e => handleAddressChange('presentAddress', e)} name="gewog" /> <ProfileField label="Dzongkhag / Thromde" value={tempProfile.presentAddress.dzongkhag} isEditing={isAddressEditing} onChange={e => handleAddressChange('presentAddress', e)} name="dzongkhag" /> <ProfileField label="House No." value={tempProfile.presentAddress.houseNo} isEditing={isAddressEditing} onChange={e => handleAddressChange('presentAddress', e)} name="houseNo" /> <h3 className="text-lg font-semibold text-text-main md:col-span-2 mt-4">Permanent Address</h3> {isAddressEditing && ( <div className="flex items-center md:col-span-2"> <input type="checkbox" id="sameAsPresent" checked={sameAsPresent} onChange={(e) => setSameAsPresent(e.target.checked)} className="h-4 w-4 text-primary focus:ring-accent border-gray-300 rounded" /> <label htmlFor="sameAsPresent" className="ml-2 block text-sm text-text-main">Same as Present Address</label> </div> )} {!sameAsPresent && ( <> <ProfileField label="Village / Town" value={tempProfile.permanentAddress.village} isEditing={isAddressEditing} onChange={e => handleAddressChange('permanentAddress', e)} name="village" /> <ProfileField label="Gewog / Thromde" value={tempProfile.permanentAddress.gewog} isEditing={isAddressEditing} onChange={e => handleAddressChange('permanentAddress', e)} name="gewog" /> <ProfileField label="Dzongkhag / Thromde" value={tempProfile.permanentAddress.dzongkhag} isEditing={isAddressEditing} onChange={e => handleAddressChange('permanentAddress', e)} name="dzongkhag" /> <ProfileField label="House No." value={tempProfile.permanentAddress.houseNo} isEditing={isAddressEditing} onChange={e => handleAddressChange('permanentAddress', e)} name="houseNo" /> </> )} </ProfileSection>
-                <div className="bg-white rounded-lg shadow-md p-6"> <div className="flex justify-between items-center mb-4"> <h2 className="text-xl font-semibold text-text-main">Family Details</h2> {!isFamilyEditing && ( <button onClick={handleFamilyEdit} className="text-sm font-medium text-accent hover:underline"> Edit </button> )} </div> <div className="space-y-4"> {tempProfile.family.map((member) => ( <div key={member.id} className="p-4 bg-gray-50 rounded-md border border-gray-200"> <div className="flex items-start space-x-4"> <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4"> <ProfileField label="Name" value={member.name} isEditing={isFamilyEditing} onChange={e => handleFamilyChange(member.id, e)} name="name" /> <ProfileField label="Relationship" value={member.relationship} isEditing={isFamilyEditing} onChange={e => handleFamilyChange(member.id, e)} name="relationship" /> <ProfileField label="Occupation" value={member.occupation} isEditing={isFamilyEditing} onChange={e => handleFamilyChange(member.id, e)} name="occupation" /> </div> {isFamilyEditing && ( <button onClick={() => removeFamilyMember(member.id)} className="p-2 text-red-500 hover:bg-red-100 rounded-full transition mt-6"> <TrashIcon /> </button> )} </div> </div> ))} {isFamilyEditing && ( <button onClick={addFamilyMember} className="flex items-center space-x-2 text-sm font-medium text-accent hover:text-primary"> <PlusIcon /> <span>Add Family Member</span> </button> )} </div> {isFamilyEditing && ( <div className="mt-6 flex justify-end space-x-3"> <button onClick={handleFamilyCancel} className="px-4 py-2 border border-gray-300 rounded-md text-text-main hover:bg-gray-50 transition text-sm"> Cancel </button> <button onClick={handleFamilySave} className="px-4 py-2 bg-primary text-white font-semibold rounded-md hover:bg-primary-dark transition text-sm"> Save Changes </button> </div> )} </div>
-            </div>
+  const handlePersonalChange = (e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      personal: { ...p.personal, [name]: value },
+    }));
+  };
+
+  // ---------------- AGENCY CHANGE ----------------
+  const handleAgencyChange = (e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      agency: { ...p.agency, [name]: value },
+    }));
+  };
+
+  // ---------------- ADDRESS CHANGE ----------------
+  const handleAddressChange = (section: 'presentAddress' | 'permanentAddress', e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      [section]: { ...p[section], [name]: value },
+    }));
+  };
+
+  useEffect(() => {
+    if (sameAsPresent && isAddressEditing) {
+      setTempProfile((p) => ({
+        ...p,
+        permanentAddress: { ...p.presentAddress },
+      }));
+    }
+  }, [sameAsPresent, tempProfile.presentAddress]);
+
+  // ---------------- FAMILY HANDLERS ----------------
+  const handleFamilyChange = (id: string, e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      family: p.family.map((m) => (m.id === id ? { ...m, [name]: value } : m)),
+    }));
+  };
+
+  const addFamilyMember = () => {
+    setTempProfile((p) => ({
+      ...p,
+      family: [...p.family, { id: generateId(), name: '', relationship: '', occupation: '' }],
+    }));
+  };
+
+  const removeFamilyMember = (id: string) => {
+    setTempProfile((p) => ({
+      ...p,
+      family: p.family.filter((m) => m.id !== id),
+    }));
+  };
+
+  // ---------------- ASSET HANDLERS ----------------
+  const handleAssetChange = (id: string, e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      assets: p.assets.map((a) => (a.id === id ? { ...a, [name]: value } : a)),
+    }));
+  };
+
+  const addAsset = () => {
+    setTempProfile((p) => ({
+      ...p,
+      assets: [...p.assets, { id: generateId(), type: '', description: '', value: '' }],
+    }));
+  };
+
+  const removeAsset = (id: string) => {
+    setTempProfile((p) => ({
+      ...p,
+      assets: p.assets.filter((a) => a.id !== id),
+    }));
+  };
+
+  // ---------------- LIABILITIES HANDLERS ----------------
+  const handleLiabilityChange = (id: string, e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      liabilities: p.liabilities.map((a) =>
+        a.id === id ? { ...a, [name]: value } : a
+      ),
+    }));
+  };
+
+  const addLiability = () => {
+    setTempProfile((p) => ({
+      ...p,
+      liabilities: [
+        ...p.liabilities,
+        { id: generateId(), source: '', amount: '', remarks: '' },
+      ],
+    }));
+  };
+
+  const removeLiability = (id: string) => {
+    setTempProfile((p) => ({
+      ...p,
+      liabilities: p.liabilities.filter((a) => a.id !== id),
+    }));
+  };
+
+  // ---------------- EXPENDITURE HANDLERS ----------------
+  const handleExpenditureChange = (id: string, e: any) => {
+    const { name, value } = e.target;
+    setTempProfile((p) => ({
+      ...p,
+      expenditures: p.expenditures.map((a) =>
+        a.id === id ? { ...a, [name]: value } : a
+      ),
+    }));
+  };
+
+  const addExpenditure = () => {
+    setTempProfile((p) => ({
+      ...p,
+      expenditures: [
+        ...p.expenditures,
+        { id: generateId(), category: '', amount: '', remarks: '' },
+      ],
+    }));
+  };
+
+  const removeExpenditure = (id: string) => {
+    setTempProfile((p) => ({
+      ...p,
+      expenditures: p.expenditures.filter((a) => a.id !== id),
+    }));
+  };
+
+  // ---------------- RENDER ----------------
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-text-main mb-2">Your Profile</h1>
+      <p className="text-text-secondary mb-8">
+        Manage your personal information, addresses, family, assets, liabilities & expenditures.
+      </p>
+
+      <div className="space-y-8">
+
+        {/* ---------------- PROFILE HEADER ---------------- */}
+        <div className="bg-white rounded-lg shadow-md p-6 flex items-center space-x-6">
+          <div className="relative group">
+            <img
+              src={profilePicture}
+              alt="Profile"
+              className="w-24 h-24 rounded-full object-cover"
+            />
+            <button
+              onClick={handlePictureUploadClick}
+              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center rounded-full transition-opacity duration-300"
+            >
+              <CameraIcon className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handlePictureChange}
+              accept="image/*"
+              className="hidden"
+            />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-text-main">
+              {profile.personal.fullName}
+            </h2>
+            <p className="text-text-secondary">Official ID: {profile.personal.officialId}</p>
+          </div>
         </div>
-    );
+
+        {/* ---------------- PERSONAL DETAILS ---------------- */}
+        <ProfileSection
+          title="Personal Details"
+          isEditing={isPersonalEditing}
+          onEdit={() => handleEdit(setPersonalEditing)}
+          onSave={() => handleSave(setPersonalEditing)}
+          onCancel={() => handleCancel(setPersonalEditing)}
+        >
+          <ProfileField
+            label="Date of Birth"
+            value={tempProfile.personal.dob}
+            isEditing={isPersonalEditing}
+            name="dob"
+            type="date"
+            onChange={handlePersonalChange}
+          />
+          <ProfileField
+            label="Email"
+            value={tempProfile.personal.email}
+            isEditing={isPersonalEditing}
+            name="email"
+            type="email"
+            onChange={handlePersonalChange}
+          />
+          <ProfileField
+            label="Phone Number"
+            value={tempProfile.personal.phone}
+            isEditing={isPersonalEditing}
+            name="phone"
+            onChange={handlePersonalChange}
+          />
+        </ProfileSection>
+
+        {/* ---------------- AGENCY DETAILS ---------------- */}
+        <ProfileSection
+          title="Working Agency Details"
+          isEditing={isAgencyEditing}
+          onEdit={() => handleEdit(setAgencyEditing)}
+          onSave={() => handleSave(setAgencyEditing)}
+          onCancel={() => handleCancel(setAgencyEditing)}
+        >
+          <ProfileField
+            label="Agency Name"
+            value={tempProfile.agency.name}
+            isEditing={isAgencyEditing}
+            name="name"
+            onChange={handleAgencyChange}
+          />
+          <ProfileField
+            label="Department / Division"
+            value={tempProfile.agency.department}
+            isEditing={isAgencyEditing}
+            name="department"
+            onChange={handleAgencyChange}
+          />
+          <ProfileField
+            label="Position Title"
+            value={tempProfile.agency.position}
+            isEditing={isAgencyEditing}
+            name="position"
+            onChange={handleAgencyChange}
+          />
+          <ProfileField
+            label="Office Address"
+            value={tempProfile.agency.officeAddress}
+            isEditing={isAgencyEditing}
+            name="officeAddress"
+            onChange={handleAgencyChange}
+          />
+        </ProfileSection>
+
+        {/* ---------------- ADDRESS DETAILS ---------------- */}
+        <ProfileSection
+          title="Address Details"
+          isEditing={isAddressEditing}
+          onEdit={() => {
+            setSameAsPresent(
+              JSON.stringify(profile.presentAddress) ===
+                JSON.stringify(profile.permanentAddress)
+            );
+            handleEdit(setAddressEditing);
+          }}
+          onSave={() => {
+            let updated = { ...tempProfile };
+            if (sameAsPresent) updated.permanentAddress = { ...updated.presentAddress };
+            setProfile(updated);
+            setTempProfile(updated);
+            setAddressEditing(false);
+          }}
+          onCancel={() => handleCancel(setAddressEditing)}
+        >
+          {/* Present Address */}
+          <h3 className="text-lg font-semibold md:col-span-2">Present Address</h3>
+          <ProfileField
+            label="Village / Town"
+            value={tempProfile.presentAddress.village}
+            isEditing={isAddressEditing}
+            name="village"
+            onChange={(e: any) => handleAddressChange('presentAddress', e)}
+          />
+          <ProfileField
+            label="Gewog / Thromde"
+            value={tempProfile.presentAddress.gewog}
+            isEditing={isAddressEditing}
+            name="gewog"
+            onChange={(e: any) => handleAddressChange('presentAddress', e)}
+          />
+          <ProfileField
+            label="Dzongkhag / Thromde"
+            value={tempProfile.presentAddress.dzongkhag}
+            isEditing={isAddressEditing}
+            name="dzongkhag"
+            onChange={(e: any) => handleAddressChange('presentAddress', e)}
+          />
+          <ProfileField
+            label="House No."
+            value={tempProfile.presentAddress.houseNo}
+            isEditing={isAddressEditing}
+            name="houseNo"
+            onChange={(e: any) => handleAddressChange('presentAddress', e)}
+          />
+
+          {/* Permanent Address */}
+          <h3 className="text-lg font-semibold md:col-span-2 mt-4">Permanent Address</h3>
+
+          {isAddressEditing && (
+            <div className="flex items-center md:col-span-2">
+              <input
+                type="checkbox"
+                id="sameAsPresent"
+                checked={sameAsPresent}
+                onChange={(e) => setSameAsPresent(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <label htmlFor="sameAsPresent" className="ml-2 text-sm">
+                Same as Present Address
+              </label>
+            </div>
+          )}
+
+          {!sameAsPresent && (
+            <>
+              <ProfileField
+                label="Village / Town"
+                value={tempProfile.permanentAddress.village}
+                isEditing={isAddressEditing}
+                name="village"
+                onChange={(e: any) => handleAddressChange('permanentAddress', e)}
+              />
+              <ProfileField
+                label="Gewog / Thromde"
+                value={tempProfile.permanentAddress.gewog}
+                isEditing={isAddressEditing}
+                name="gewog"
+                onChange={(e: any) => handleAddressChange('permanentAddress', e)}
+              />
+              <ProfileField
+                label="Dzongkhag / Thromde"
+                value={tempProfile.permanentAddress.dzongkhag}
+                isEditing={isAddressEditing}
+                name="dzongkhag"
+                onChange={(e: any) => handleAddressChange('permanentAddress', e)}
+              />
+              <ProfileField
+                label="House No."
+                value={tempProfile.permanentAddress.houseNo}
+                isEditing={isAddressEditing}
+                name="houseNo"
+                onChange={(e: any) => handleAddressChange('permanentAddress', e)}
+              />
+            </>
+          )}
+        </ProfileSection>
+
+        {/* ---------------- FAMILY DETAILS ---------------- */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-xl font-semibold text-text-main">Family Details</h2>
+            {!isFamilyEditing && (
+              <button
+                onClick={() => handleEdit(setFamilyEditing)}
+                className="text-sm font-medium text-accent hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {tempProfile.family.map((f) => (
+              <div key={f.id} className="p-4 bg-gray-50 border rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <ProfileField
+                    label="Name"
+                    value={f.name}
+                    isEditing={isFamilyEditing}
+                    name="name"
+                    onChange={(e: any) => handleFamilyChange(f.id, e)}
+                  />
+                  <ProfileField
+                    label="Relationship"
+                    value={f.relationship}
+                    isEditing={isFamilyEditing}
+                    name="relationship"
+                    onChange={(e: any) => handleFamilyChange(f.id, e)}
+                  />
+                  <ProfileField
+                    label="Occupation"
+                    value={f.occupation}
+                    isEditing={isFamilyEditing}
+                    name="occupation"
+                    onChange={(e: any) => handleFamilyChange(f.id, e)}
+                  />
+                </div>
+
+                {isFamilyEditing && (
+                  <button
+                    onClick={() => removeFamilyMember(f.id)}
+                    className="mt-2 p-2 text-red-500 hover:bg-red-100 rounded-full"
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {isFamilyEditing && (
+              <button
+                onClick={addFamilyMember}
+                className="flex items-center space-x-2 text-sm font-medium text-accent"
+              >
+                <PlusIcon /> <span>Add Family Member</span>
+              </button>
+            )}
+          </div>
+
+          {isFamilyEditing && (
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => handleCancel(setFamilyEditing)}
+                className="px-4 py-2 border rounded-md text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSave(setFamilyEditing)}
+                className="px-4 py-2 bg-primary text-white rounded-md text-sm"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ---------------- ASSETS ---------------- */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-xl font-semibold">Assets</h2>
+            {!isAssetEditing && (
+              <button
+                onClick={() => handleEdit(setAssetEditing)}
+                className="text-sm text-accent hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {tempProfile.assets.map((a) => (
+              <div key={a.id} className="p-4 bg-gray-50 border rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <ProfileField
+                    label="Asset Type"
+                    value={a.type}
+                    isEditing={isAssetEditing}
+                    name="type"
+                    onChange={(e: any) => handleAssetChange(a.id, e)}
+                  />
+                  <ProfileField
+                    label="Description"
+                    value={a.description}
+                    isEditing={isAssetEditing}
+                    name="description"
+                    onChange={(e: any) => handleAssetChange(a.id, e)}
+                  />
+                  <ProfileField
+                    label="Estimated Value"
+                    value={a.value}
+                    isEditing={isAssetEditing}
+                    name="value"
+                    onChange={(e: any) => handleAssetChange(a.id, e)}
+                  />
+                </div>
+
+                {isAssetEditing && (
+                  <button
+                    onClick={() => removeAsset(a.id)}
+                    className="mt-2 p-2 text-red-500 hover:bg-red-100 rounded-full"
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {isAssetEditing && (
+              <button
+                onClick={addAsset}
+                className="flex items-center space-x-2 text-sm font-medium text-accent"
+              >
+                <PlusIcon /> <span>Add Asset</span>
+              </button>
+            )}
+          </div>
+
+          {isAssetEditing && (
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => handleCancel(setAssetEditing)}
+                className="px-4 py-2 border rounded-md text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSave(setAssetEditing)}
+                className="px-4 py-2 bg-primary text-white rounded-md text-sm"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ---------------- LIABILITIES ---------------- */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-xl font-semibold">Liabilities</h2>
+            {!isLiabilityEditing && (
+              <button
+                onClick={() => handleEdit(setLiabilityEditing)}
+                className="text-sm text-accent hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {tempProfile.liabilities.map((a) => (
+              <div key={a.id} className="p-4 bg-gray-50 border rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <ProfileField
+                    label="Source"
+                    value={a.source}
+                    isEditing={isLiabilityEditing}
+                    name="source"
+                    onChange={(e: any) => handleLiabilityChange(a.id, e)}
+                  />
+                  <ProfileField
+                    label="Amount"
+                    value={a.amount}
+                    isEditing={isLiabilityEditing}
+                    name="amount"
+                    onChange={(e: any) => handleLiabilityChange(a.id, e)}
+                  />
+                  <ProfileField
+                    label="Remarks"
+                    value={a.remarks}
+                    isEditing={isLiabilityEditing}
+                    name="remarks"
+                    onChange={(e: any) => handleLiabilityChange(a.id, e)}
+                  />
+                </div>
+
+                {isLiabilityEditing && (
+                  <button
+                    onClick={() => removeLiability(a.id)}
+                    className="mt-2 p-2 text-red-500 hover:bg-red-100 rounded-full"
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {isLiabilityEditing && (
+              <button
+                onClick={addLiability}
+                className="flex items-center space-x-2 text-sm font-medium text-accent"
+              >
+                <PlusIcon /> <span>Add Liability</span>
+              </button>
+            )}
+          </div>
+
+          {isLiabilityEditing && (
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => handleCancel(setLiabilityEditing)}
+                className="px-4 py-2 border rounded-md text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSave(setLiabilityEditing)}
+                className="px-4 py-2 bg-primary text-white rounded-md text-sm"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ---------------- EXPENDITURES ---------------- */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between mb-4">
+            <h2 className="text-xl font-semibold">Yearly Major Expenditures</h2>
+            {!isExpenditureEditing && (
+              <button
+                onClick={() => handleEdit(setExpenditureEditing)}
+                className="text-sm text-accent hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {tempProfile.expenditures.map((a) => (
+              <div key={a.id} className="p-4 bg-gray-50 border rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <ProfileField
+                    label="Expenditure Category"
+                    value={a.category}
+                    isEditing={isExpenditureEditing}
+                    name="category"
+                    onChange={(e: any) => handleExpenditureChange(a.id, e)}
+                  />
+                  <ProfileField
+                    label="Amount"
+                    value={a.amount}
+                    isEditing={isExpenditureEditing}
+                    name="amount"
+                    onChange={(e: any) => handleExpenditureChange(a.id, e)}
+                  />
+                  <ProfileField
+                    label="Remarks"
+                    value={a.remarks}
+                    isEditing={isExpenditureEditing}
+                    name="remarks"
+                    onChange={(e: any) => handleExpenditureChange(a.id, e)}
+                  />
+                </div>
+
+                {isExpenditureEditing && (
+                  <button
+                    onClick={() => removeExpenditure(a.id)}
+                    className="mt-2 p-2 text-red-500 hover:bg-red-100 rounded-full"
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {isExpenditureEditing && (
+              <button
+                onClick={addExpenditure}
+                className="flex items-center space-x-2 text-sm font-medium text-accent"
+              >
+                <PlusIcon /> <span>Add Expenditure</span>
+              </button>
+            )}
+          </div>
+
+          {isExpenditureEditing && (
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => handleCancel(setExpenditureEditing)}
+                className="px-4 py-2 border rounded-md text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSave(setExpenditureEditing)}
+                className="px-4 py-2 bg-primary text-white rounded-md text-sm"
+              >
+                Save Changes
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ProfilePage;

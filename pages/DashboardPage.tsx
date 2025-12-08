@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // ADD useEffect
 import Header from '../components/Header';
 import DashboardCard from '../components/DashboardCard';
 import DeclarationRow from '../components/DeclarationRow';
@@ -185,12 +185,114 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
 const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwitchView }) => {
   const [activePage, setActivePage] = useState('dashboard');
   const [profilePicture, setProfilePicture] = useState('https://picsum.photos/100');
+  const [isAdminHistoryView, setIsAdminHistoryView] = useState(false);
+  const [adminHistoryData, setAdminHistoryData] = useState<{
+    officialId: string;
+    officialName: string;
+    viewerRole: UserRole;
+  } | null>(null);
+  
+  // NEW: Check for admin history view on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewAs = params.get('viewAs');
+    const officialId = params.get('officialId');
+    const section = params.get('section');
+    
+    if (viewAs === 'admin' && officialId && section === 'history') {
+      try {
+        const storedData = sessionStorage.getItem('adminViewData');
+        if (storedData) {
+          const data = JSON.parse(storedData);
+          if (data.officialId === officialId) {
+            // Set admin history view mode and switch to history page
+            setIsAdminHistoryView(true);
+            setAdminHistoryData({
+              officialId: data.officialId,
+              officialName: data.officialName,
+              viewerRole: data.viewerRole
+            });
+            setActivePage('history');
+            
+            // Clear URL parameters to prevent reload issues
+            window.history.replaceState({}, '', '/dashboard');
+          }
+        }
+      } catch (e) {
+        console.error('Error reading admin view data:', e);
+      }
+    }
+  }, []);
 
   const renderContent = () => {
     switch(activePage) {
       case 'dashboard': return <DashboardContent setActivePage={setActivePage} />;
       case 'filenew': return <FileNewPage />;
-      case 'history': return <HistoryPage declarations={mockDeclarations} />;
+      case 'history': 
+        if (isAdminHistoryView && adminHistoryData) {
+          // Create mock declarations for the target official
+          const adminDeclarations: Declaration[] = [
+            { 
+              id: `DEC-${adminHistoryData.officialId}-2024`, 
+              year: 2024, 
+              type: 'Annual', 
+              submissionDate: '2024-01-15', 
+              status: DeclarationStatus.APPROVED 
+            },
+            { 
+              id: `DEC-${adminHistoryData.officialId}-2023`, 
+              year: 2023, 
+              type: 'Annual', 
+              submissionDate: '2023-01-10', 
+              status: DeclarationStatus.APPROVED 
+            },
+            { 
+              id: `DEC-${adminHistoryData.officialId}-2022`, 
+              year: 2022, 
+              type: 'Annual', 
+              submissionDate: '2022-01-12', 
+              status: DeclarationStatus.APPROVED 
+            },
+          ];
+          
+          return (
+            <div>
+              {/* Admin View Header */}
+              <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <button 
+                        onClick={() => {
+                          setIsAdminHistoryView(false);
+                          setAdminHistoryData(null);
+                          setActivePage('dashboard');
+                        }}
+                        className="flex items-center text-blue-700 hover:text-blue-900 font-medium text-sm"
+                      >
+                        <span className="mr-1">←</span>
+                        Back to Dashboard
+                      </button>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded">
+                        ADMIN VIEW
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Declaration History: {adminHistoryData.officialName}
+                    </h2>
+                    <p className="text-gray-600 text-sm mt-1">
+                      Official ID: {adminHistoryData.officialId} • {adminDeclarations.length} declarations
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* History Page with admin data */}
+              <HistoryPage declarations={adminDeclarations} />
+            </div>
+          );
+        }
+        return <HistoryPage declarations={mockDeclarations} />;
       case 'profile': return <ProfilePage profilePicture={profilePicture} setProfilePicture={setProfilePicture} />;
       case 'faq': return <FaqPage />;
       case 'resources': return <ResourcesPage />;

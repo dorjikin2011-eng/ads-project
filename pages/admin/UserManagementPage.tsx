@@ -131,9 +131,9 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
         );
     });
 
-    // View History Handler - FIXED: No useNavigate error
+    // View History Handler - UPDATED TO USE DASHBOARD ROUTE
     const handleViewHistory = (officialId: string, officialName: string) => {
-        // Store data to pass to HistoryPage
+        // Store data to pass to HistoryPage via Dashboard
         const adminViewData = {
             officialId,
             officialName,
@@ -141,18 +141,12 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
             timestamp: new Date().toISOString()
         };
         
-        // Store in sessionStorage for HistoryPage to access
+        // Store in sessionStorage for DashboardPage to access
         sessionStorage.setItem('adminViewData', JSON.stringify(adminViewData));
         
-        // Navigate to HistoryPage with query parameters
-        const params = new URLSearchParams({
-            viewAs: 'admin',
-            officialId: officialId,
-            officialName: encodeURIComponent(officialName)
-        });
-        
-        // Use window.location to avoid router dependency
-        window.location.href = `/history?${params.toString()}`;
+        // Navigate to Dashboard with history parameters
+        // This uses your existing /dashboard route (no 404 error)
+        window.location.href = `/dashboard?viewAs=admin&officialId=${officialId}&section=history`;
     };
 
     // Handlers

@@ -11,6 +11,9 @@ import InfoSharingPage from './admin/InfoSharingPage';
 import ApiManagementPage from './admin/ApiManagementPage';
 import AuditLogPage from './admin/AuditLogPage';
 import FileNewPage from './FileNewPage';
+// ADD THESE IMPORTS
+import AdaProfilePage from './AdaProfilePage';
+import CadaProfilePage from './CadaProfilePage';
 import { Declaration, DeclarationStatus, UserRole } from '../types';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import SearchIcon from '../components/icons/SearchIcon';
@@ -19,14 +22,10 @@ import XIcon from '../components/icons/XIcon';
 interface AdminDashboardPageProps {
   onLogout: () => void;
   userRole: UserRole;
-  onSwitchView?: () => void; // New Prop
+  onSwitchView?: () => void;
 }
 
-// ... (KEEP MOCK DATA & OVERVIEW CONTENT AS IS - OMITTING FOR BREVITY) ...
-// If you need the full file again I can provide it, but assuming you just need the props update.
-
-// I will provide the FULL file to avoid confusion, assuming the mock data logic from previous steps is still valid.
-// Just pasting the full content for safety.
+// ... (KEEP ALL THE EXISTING MOCK DATA AND COMPONENTS AS IS) ...
 
 const allSubmissions: Declaration[] = [
   { id: 'DEC-2024-001', officialName: 'H.E. Lyonpo Dorji', officialId: '11223344', year: 2023, type: 'Annual', submissionDate: '2024-02-20', status: DeclarationStatus.PENDING, riskScore: 'Low', schedule: 'Schedule I', agency: 'Cabinet' },
@@ -88,6 +87,8 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
   const [activePage, setActivePage] = useState('dashboard');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [filingTarget, setFilingTarget] = useState<{name: string, id: string} | null>(null);
+  // ADD PROFILE PICTURE STATE
+  const [profilePicture, setProfilePicture] = useState('https://via.placeholder.com/150');
 
   const handleViewDetails = (id: string) => { setSelectedSubmissionId(id); setActivePage('verification'); };
   const handleFileOnBehalf = (name: string, id: string) => { setFilingTarget({ name, id }); setActivePage('file-on-behalf'); };
@@ -105,6 +106,17 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
       case 'reports': return <AdminReportsPage userRole={userRole} />;
       case 'audit': return <AuditLogPage userRole={userRole} />;
       case 'file-on-behalf': return <FileNewPage isProcessingForAdmin={true} targetOfficialName={filingTarget?.name} targetOfficialId={filingTarget?.id} />;
+      // ADD PROFILE PAGES
+      case 'ada-profile':
+        return <AdaProfilePage 
+          profilePicture={profilePicture}
+          setProfilePicture={setProfilePicture}
+        />;
+      case 'cada-profile':
+        return <CadaProfilePage 
+          profilePicture={profilePicture}
+          setProfilePicture={setProfilePicture}
+        />;
       default: return <OverviewContent onViewDetails={handleViewDetails} userRole={userRole} />;
     }
   };
@@ -112,7 +124,13 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Pass Switch Prop to Header */}
-      <AdminHeader activePage={activePage} setActivePage={setActivePage} onLogout={onLogout} userRole={userRole} onSwitchView={onSwitchView} />
+      <AdminHeader 
+        activePage={activePage} 
+        setActivePage={setActivePage} 
+        onLogout={onLogout} 
+        userRole={userRole} 
+        onSwitchView={onSwitchView} 
+      />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="container mx-auto max-w-7xl">
           {renderContent()}

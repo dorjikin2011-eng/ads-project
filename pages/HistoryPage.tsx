@@ -1,42 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { Declaration } from '../types';
 import DocumentIcon from '../components/icons/DocumentIcon';
-import { useLocation, useNavigate } from 'react-router-dom';
-import ArrowLeftIcon from '../components/icons/ArrowLeftIcon';
 
 interface HistoryPageProps {
   declarations: Declaration[];
 }
 
 const HistoryPage: React.FC<HistoryPageProps> = ({ declarations: propDeclarations }) => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    
     const [declarations, setDeclarations] = useState<Declaration[]>(propDeclarations);
     const [isAdminView, setIsAdminView] = useState(false);
     const [targetOfficial, setTargetOfficial] = useState<{id: string, name: string} | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Check for admin view
+    // Check for admin view on component mount
     useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
-        const viewAs = searchParams.get('viewAs');
-        const officialId = searchParams.get('officialId');
+        // Get query parameters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewAs = urlParams.get('viewAs');
+        const officialId = urlParams.get('officialId');
         
         if (viewAs === 'admin' && officialId) {
             setIsAdminView(true);
             
-            // Get data from navigation state
-            const officialName = location.state?.officialName || `Official ${officialId}`;
-            setTargetOfficial({
-                id: officialId,
-                name: officialName
-            });
+            // Try to get official name from sessionStorage or URL
+            try {
+                // First try sessionStorage (set by UserManagementPage)
+                const adminViewData = sessionStorage.getItem('adminViewData');
+                if (adminViewData) {
+                    const data = JSON.parse(adminViewData);
+                    if (data.officialId === officialId) {
+                        setTargetOfficial({
+                            id: officialId,
+                            name: data.officialName || `Official ${officialId}`
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Error reading sessionStorage:', e);
+            }
             
-            // Load data for the target official
+            // If no sessionStorage data, try URL parameter
+            if (!targetOfficial) {
+                const officialName = urlParams.get('officialName') || `Official ${officialId}`;
+                setTargetOfficial({
+                    id: officialId,
+                    name: decodeURIComponent(officialName)
+                });
+            }
+            
+            // Load mock data for the target official (replace with API call)
             if (!propDeclarations || propDeclarations.length === 0) {
                 setLoading(true);
-                // Simulate API call
                 setTimeout(() => {
                     const mockDeclarations: Declaration[] = [
                         {
@@ -66,10 +80,10 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ declarations: propDeclaration
                 }, 500);
             }
         } else {
-            // Normal user view
+            // Normal user view - use propDeclarations
             setDeclarations(propDeclarations);
         }
-    }, [location, propDeclarations]);
+    }, [propDeclarations]);
 
     const handleDownloadReceipt = (year: number) => {
         if (isAdminView && targetOfficial) {
@@ -81,23 +95,30 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ declarations: propDeclaration
 
     const handleViewDetails = (declaration: Declaration) => {
         if (isAdminView) {
-            navigate(`/declaration/view/${declaration.id || declaration.year}`, {
-                state: {
-                    viewAs: 'admin',
-                    officialId: targetOfficial?.id,
-                    officialName: targetOfficial?.name
-                }
-            });
+            alert(`Admin view details for: ${declaration.year}\nOfficial: ${targetOfficial?.name}`);
+            // For full implementation:
+            // window.location.href = `/declaration/view/${declaration.id || declaration.year}?viewAs=admin&officialId=${targetOfficial?.id}`;
         } else {
-            navigate(`/declaration/view/${declaration.id || declaration.year}`);
+            alert(`Viewing details for: ${declaration.year}`);
+            // window.location.href = `/declaration/view/${declaration.id || declaration.year}`;
         }
     };
 
     const handleBackToUserManagement = () => {
-        navigate('/user-management');
+        // Clear sessionStorage data
+        sessionStorage.removeItem('adminViewData');
+        // Navigate back
+        window.location.href = '/user-management';
     };
 
-    // Safe status color function - FIXES THE TYPE ERROR
+    const handleDACheck = (declaration: Declaration) => {
+        if (isAdminView && targetOfficial) {
+            alert(`DA Analysis for ${targetOfficial.name} - ${declaration.year}\nWould navigate to DA analysis page.`);
+            // window.location.href = `/da-analysis?declarationId=${declaration.id || declaration.year}&officialId=${targetOfficial.id}`;
+        }
+    };
+
+    // Safe status color function
     const getStatusColor = (status: string) => {
         const statusLower = status.toLowerCase();
         
@@ -124,7 +145,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ declarations: propDeclaration
                                     onClick={handleBackToUserManagement}
                                     className="flex items-center text-blue-700 hover:text-blue-900 font-medium text-sm"
                                 >
-                                    <ArrowLeftIcon className="w-4 h-4 mr-1" />
+                                    <span className="mr-1">←</span>
                                     Back to User Management
                                 </button>
                                 <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded">
@@ -207,7 +228,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ declarations: propDeclaration
                                             </button>
                                             {isAdminView && (
                                                 <button 
-                                                    onClick={() => navigate(`/da-analysis?declarationId=${declaration.id || declaration.year}&officialId=${targetOfficial?.id}`)}
+                                                    onClick={() => handleDACheck(declaration)}
                                                     className="text-red-600 hover:underline font-medium text-sm"
                                                 >
                                                     DA Check

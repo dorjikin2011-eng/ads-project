@@ -7,7 +7,6 @@ import Modal from '../../components/Modal';
 import CheckIcon from '../../components/icons/CheckIcon';
 import DocumentIcon from '../../components/icons/DocumentIcon';
 import HistoryIcon from '../../components/icons/HistoryIcon';
-import { useNavigate } from 'react-router-dom';
 
 interface Official { 
   id: string; 
@@ -101,8 +100,6 @@ interface UserManagementPageProps {
 }
 
 const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFileOnBehalf }) => {
-    const navigate = useNavigate();
-    
     const [activeTab, setActiveTab] = useState<'Master List' | 'Admin Requests'>('Master List');
     const [officials, setOfficials] = useState<Official[]>(initialOfficials);
     const [adminRequests, setAdminRequests] = useState(initialRequests);
@@ -134,16 +131,28 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
         );
     });
 
-    // View History Handler
+    // View History Handler - FIXED: No useNavigate error
     const handleViewHistory = (officialId: string, officialName: string) => {
-        navigate(`/history?viewAs=admin&officialId=${officialId}`, {
-            state: {
-                officialName: officialName,
-                officialId: officialId,
-                viewerRole: userRole,
-                timestamp: new Date().toISOString()
-            }
+        // Store data to pass to HistoryPage
+        const adminViewData = {
+            officialId,
+            officialName,
+            viewerRole: userRole,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Store in sessionStorage for HistoryPage to access
+        sessionStorage.setItem('adminViewData', JSON.stringify(adminViewData));
+        
+        // Navigate to HistoryPage with query parameters
+        const params = new URLSearchParams({
+            viewAs: 'admin',
+            officialId: officialId,
+            officialName: encodeURIComponent(officialName)
         });
+        
+        // Use window.location to avoid router dependency
+        window.location.href = `/history?${params.toString()}`;
     };
 
     // Handlers

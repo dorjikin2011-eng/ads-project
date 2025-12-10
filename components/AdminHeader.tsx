@@ -1,3 +1,4 @@
+// components/AdminHeader.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import BellIcon from './icons/BellIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -12,7 +13,7 @@ import BanknotesIcon from './icons/BanknotesIcon';
 import ShareIcon from './icons/ShareIcon';
 import ServerIcon from './icons/ServerIcon';
 import HistoryIcon from './icons/HistoryIcon';
-import { UserRole } from '../types';
+import WarningIcon from './icons/WarningIcon'; // ← ADDED
 
 interface AdminHeaderProps {
     activePage: string;
@@ -53,14 +54,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
     const adminName = userRole === 'admin' ? 'Tashi Dorji' : 'Karma Wangdi';
     const adminRoleLabel = userRole === 'admin' ? 'CADA' : 'ADA - Ministry of Finance';
 
-    // Handle profile navigation based on user role
     const handleProfileClick = () => {
         setProfileOpen(false);
-        // Navigate to appropriate profile page based on user role
         if (userRole === 'admin') {
-            setActivePage('cada-profile'); // For CADA
+            setActivePage('cada-profile');
         } else if (userRole === 'agency_admin') {
-            setActivePage('ada-profile'); // For ADA
+            setActivePage('ada-profile');
         }
     };
 
@@ -68,8 +67,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
         <header className="bg-white shadow-md sticky top-0 z-40 border-b-4 border-text-main">
             <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
-                    
-                    {/* Left Section: Logo & Title */}
                     <div className="flex items-center shrink-0 mr-4">
                         <PngLogoIcon />
                         <span className="ml-3 font-bold text-text-main text-sm block w-[140px]">
@@ -77,7 +74,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                         </span>
                     </div>
 
-                    {/* Center Section: Main Navigation */}
                     <nav className="flex-1 overflow-x-auto no-scrollbar">
                         <ul className="flex items-center space-x-1 h-full">
                            <NavLink icon={<DashboardIcon />} label="Home" page="dashboard" activePage={activePage} setActivePage={setActivePage} />
@@ -86,6 +82,17 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                            
                            {(userRole === 'admin' || userRole === 'agency_admin') && (
                                <NavLink icon={<BanknotesIcon />} label="Payments" page="payments" activePage={activePage} setActivePage={setActivePage} />
+                           )}
+
+                           {/* CoI Alert Tab — ADA & CADA only */}
+                           {(userRole === 'admin' || userRole === 'agency_admin') && (
+                               <NavLink 
+                                 icon={<WarningIcon />} 
+                                 label="CoI Alerts" 
+                                 page="coi" 
+                                 activePage={activePage} 
+                                 setActivePage={setActivePage} 
+                               />
                            )}
 
                            {userRole === 'admin' && (
@@ -102,7 +109,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                         </ul>
                     </nav>
 
-                    {/* Right Section: Actions and User Menu */}
                     <div className="flex items-center space-x-3 ml-4 shrink-0">
                         {onSwitchView && (
                             <button 
@@ -130,38 +136,20 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                             </button>
                             {profileOpen && (
                                 <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 p-1 z-50">
-                                    {/* User Info Section */}
                                     <div className="px-3 py-2 border-b border-gray-100">
                                         <p className="text-sm font-semibold text-text-main">{adminName}</p>
                                         <p className="text-xs text-text-secondary">{adminRoleLabel}</p>
                                     </div>
-                                    
-                                    {/* Your Profile Link */}
                                     <button 
                                         onClick={handleProfileClick}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
                                     >
-                                        {/* User Icon SVG */}
-                                        <svg 
-                                            className="w-4 h-4 mr-3 text-gray-500" 
-                                            fill="none" 
-                                            stroke="currentColor" 
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path 
-                                                strokeLinecap="round" 
-                                                strokeLinejoin="round" 
-                                                strokeWidth={2} 
-                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                            />
+                                        <svg className="w-4 h-4 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                         Your Profile
                                     </button>
-                                    
-                                    {/* Divider */}
                                     <div className="border-t border-gray-100 my-1"></div>
-                                    
-                                    {/* Logout Option */}
                                     <button 
                                         onClick={() => {
                                             setProfileOpen(false);

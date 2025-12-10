@@ -8,6 +8,7 @@ import UserAddIcon from '../components/icons/UserAddIcon';
 import Modal from '../components/Modal';
 // ADD THIS IMPORT
 import HoaProfilePage from './HoaProfilePage';
+import CoIAlertsPage from './CoIAlertsPage';
 
 // Mock Data
 const agencyStats = { totalStaff: 450, filed: 438, pending: 2, penalized: 10, penaltyAmount: 12500 };
@@ -203,6 +204,8 @@ const HoADashboardPage: React.FC<HoADashboardPageProps> = ({ onLogout, onSwitchV
                         setProfilePicture={setProfilePicture}
                     />
                 );
+                case 'coi': 
+  return <CoIAlertsPage userRole="hoa" />;
 
             default: 
                 return (

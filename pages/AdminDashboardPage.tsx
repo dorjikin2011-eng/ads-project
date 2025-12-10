@@ -18,6 +18,7 @@ import { Declaration, DeclarationStatus, UserRole } from '../types';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import SearchIcon from '../components/icons/SearchIcon';
 import XIcon from '../components/icons/XIcon';
+import CoIAlertsPage from './CoIAlertsPage';
 
 interface AdminDashboardPageProps {
   onLogout: () => void;
@@ -117,6 +118,8 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
           profilePicture={profilePicture}
           setProfilePicture={setProfilePicture}
         />;
+        case 'coi': 
+  return <CoIAlertsPage userRole={userRole} />;
       default: return <OverviewContent onViewDetails={handleViewDetails} userRole={userRole} />;
     }
   };

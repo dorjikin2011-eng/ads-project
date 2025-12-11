@@ -18,7 +18,7 @@ import { Declaration, DeclarationStatus, UserRole } from '../types';
 import ChevronDownIcon from '../components/icons/ChevronDownIcon';
 import SearchIcon from '../components/icons/SearchIcon';
 import XIcon from '../components/icons/XIcon';
-import CoIAlertsPage from './CoIAlertsPage';
+import CoIAlertsPage from './admin/CoIAlertsPage';
 
 interface AdminDashboardPageProps {
   onLogout: () => void;

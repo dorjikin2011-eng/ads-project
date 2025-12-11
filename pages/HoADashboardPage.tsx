@@ -8,7 +8,7 @@ import UserAddIcon from '../components/icons/UserAddIcon';
 import Modal from '../components/Modal';
 // ADD THIS IMPORT
 import HoaProfilePage from './HoaProfilePage';
-import CoIAlertsPage from './CoIAlertsPage';
+import CoIAlertsPage from './admin/CoIAlertsPage';
 
 // Mock Data
 const agencyStats = { totalStaff: 450, filed: 438, pending: 2, penalized: 10, penaltyAmount: 12500 };

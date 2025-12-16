@@ -15,7 +15,7 @@ interface PenaltyCase {
     type: 'Late Filing' | 'Non-Filing' | 'False Declaration' | 'Incomplete Filing';
     daysOverdue?: number;
     fineAmount: number;
-    status: 'Pending' | 'Paid' | 'Waived';
+    status: 'Pending' | 'Paid' | 'Waived' | 'Waiver Requested';
     generatedDate: string;
 }
 
@@ -51,6 +51,13 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
     const [birmsResult, setBirmsResult] = useState<any>(null);
     const [birmsLoading, setBirmsLoading] = useState(false);
 
+    // Penalty Waiver Modal State
+    const [isWaiverModalOpen, setWaiverModalOpen] = useState(false);
+    const [waiverReason, setWaiverReason] = useState('');
+    const [waiverAmount, setWaiverAmount] = useState<string>('full'); // 'full', 'partial', 'custom'
+    const [customWaiverAmount, setCustomWaiverAmount] = useState('');
+    const [supportingDocs, setSupportingDocs] = useState<File[]>([]);
+
     const formatCurrency = (val: number) => "Nu. " + val.toLocaleString();
 
     // Calculation Logic
@@ -75,6 +82,7 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
     const totalOutstanding = cases.filter(c => c.status === 'Pending').reduce((sum, c) => sum + c.fineAmount, 0);
     const totalCollected = cases.filter(c => c.status === 'Paid').reduce((sum, c) => sum + c.fineAmount, 0);
     const activeCasesCount = cases.filter(c => c.status === 'Pending').length;
+    const waiverRequestsCount = cases.filter(c => c.status === 'Waiver Requested').length;
 
     // Handlers
     const openPaymentModal = (item: PenaltyCase) => {
@@ -87,12 +95,83 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
         setPayModalOpen(true);
     };
 
+    const openWaiverModal = (item: PenaltyCase) => {
+        setSelectedCase(item);
+        setWaiverReason('');
+        setWaiverAmount('full');
+        setCustomWaiverAmount('');
+        setSupportingDocs([]);
+        setWaiverModalOpen(true);
+    };
+
     const confirmPayment = (method: string, ref?: string) => {
         if (selectedCase) {
             setCases(cases.map(c => c.id === selectedCase.id ? { ...c, status: 'Paid' } : c));
             setPayModalOpen(false);
             alert(`Payment Recorded via ${method}!`);
         }
+    };
+
+    const submitWaiverRequest = () => {
+        if (!selectedCase || !waiverReason) {
+            alert('Please provide a reason for the waiver request.');
+            return;
+        }
+
+        // Calculate waiver amount
+        let waiverAmt = 0;
+        let waiverType = '';
+        
+        if (waiverAmount === 'full') {
+            waiverAmt = selectedCase.fineAmount;
+            waiverType = 'Full Waiver';
+        } else if (waiverAmount === 'partial') {
+            waiverAmt = Math.round(selectedCase.fineAmount * 0.5); // 50% default
+            waiverType = '50% Waiver';
+        } else if (waiverAmount === 'custom' && customWaiverAmount) {
+            waiverAmt = parseFloat(customWaiverAmount);
+            waiverType = `Custom Waiver (Nu. ${waiverAmt.toLocaleString()})`;
+        }
+
+        if (waiverAmt <= 0 || waiverAmt > selectedCase.fineAmount) {
+            alert('Invalid waiver amount. Please check the amount.');
+            return;
+        }
+
+        // Update case status to Waiver Requested
+        setCases(cases.map(c => 
+            c.id === selectedCase.id ? { ...c, status: 'Waiver Requested' as const } : c
+        ));
+
+        // Create the waiver request data that would go to Commission Decisions page
+        const waiverRequestData = {
+            caseId: `COM-PW-${Date.now().toString().slice(-6)}`,
+            penaltyId: selectedCase.id,
+            officialName: selectedCase.officialName,
+            officialId: selectedCase.officialId,
+            agency: selectedCase.agency,
+            originalPenaltyAmount: selectedCase.fineAmount,
+            requestedWaiverAmount: waiverAmt,
+            waiverType: waiverType,
+            reason: waiverReason,
+            violationType: selectedCase.type,
+            forwardedDate: new Date().toISOString().split('T')[0], // Today's date
+            status: 'Pending Review',
+            supportingDocuments: supportingDocs
+        };
+
+        // In a real app, you would send this data to an API/backend
+        // For now, we'll log it and show a success message
+        console.log('Waiver Request Created for Commission:', waiverRequestData);
+        
+        // Show success message with details
+        alert(`Penalty Waiver Request Submitted Successfully!\n\n` +
+              `Case ID: ${waiverRequestData.caseId}\n` +
+              `Official: ${selectedCase.officialName}\n` +
+              `Requested Waiver: ${waiverType}\n\n` +
+              `This request has been forwarded to the Commission for review.`);
+
+        setWaiverModalOpen(false);
     };
 
     const handleBirmsSearch = () => {
@@ -105,6 +184,17 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
 
     const sendReminder = (name: string) => {
         alert(`Reminder Notification sent to ${name} via Email and SMS.`);
+    };
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files) {
+            setSupportingDocs(Array.from(files));
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setSupportingDocs(prev => prev.filter((_, i) => i !== index));
     };
 
     return (
@@ -134,6 +224,181 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
                 )} 
             </Modal>
 
+            {/* Penalty Waiver Request Modal */}
+            <Modal 
+                isOpen={isWaiverModalOpen} 
+                onClose={() => setWaiverModalOpen(false)} 
+                title="Submit Penalty Waiver Request"
+                size="lg"
+            >
+                {selectedCase && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-blue-700">Official:</span>
+                                <span className="font-bold">{selectedCase.officialName} ({selectedCase.officialId})</span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-blue-700">Violation:</span>
+                                <span className="font-bold">{selectedCase.type}</span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-blue-700">Penalty Amount:</span>
+                                <span className="font-bold text-red-600">{formatCurrency(selectedCase.fineAmount)}</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Waiver Type *
+                            </label>
+                            <div className="space-y-2">
+                                <label className="flex items-center">
+                                    <input 
+                                        type="radio" 
+                                        name="waiverAmount" 
+                                        value="full" 
+                                        checked={waiverAmount === 'full'}
+                                        onChange={(e) => setWaiverAmount(e.target.value)}
+                                        className="mr-2"
+                                    />
+                                    <span>Request Full Waiver (100% - Nu. {selectedCase.fineAmount.toLocaleString()})</span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input 
+                                        type="radio" 
+                                        name="waiverAmount" 
+                                        value="partial" 
+                                        checked={waiverAmount === 'partial'}
+                                        onChange={(e) => setWaiverAmount(e.target.value)}
+                                        className="mr-2"
+                                    />
+                                    <span>Request Partial Waiver (50% - Nu. {Math.round(selectedCase.fineAmount * 0.5).toLocaleString()})</span>
+                                </label>
+                                <label className="flex items-center">
+                                    <input 
+                                        type="radio" 
+                                        name="waiverAmount" 
+                                        value="custom" 
+                                        checked={waiverAmount === 'custom'}
+                                        onChange={(e) => setWaiverAmount(e.target.value)}
+                                        className="mr-2"
+                                    />
+                                    <span className="flex items-center">
+                                        Request Custom Waiver: Nu. 
+                                        <input 
+                                            type="number" 
+                                            value={customWaiverAmount}
+                                            onChange={(e) => setCustomWaiverAmount(e.target.value)}
+                                            className="ml-2 px-2 py-1 border rounded w-32 text-sm"
+                                            placeholder="Enter amount"
+                                            disabled={waiverAmount !== 'custom'}
+                                            min="0"
+                                            max={selectedCase.fineAmount}
+                                        />
+                                        <span className="ml-2 text-sm text-gray-500">
+                                            (Max: {formatCurrency(selectedCase.fineAmount)})
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Reason for Waiver Request *
+                            </label>
+                            <textarea 
+                                value={waiverReason}
+                                onChange={(e) => setWaiverReason(e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                                placeholder="Please provide detailed reasons for requesting a penalty waiver (e.g., medical emergency, technical issues, administrative delays)..."
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Supporting Documents (Optional)
+                            </label>
+                            <div className="border-2 border-dashed border-gray-300 rounded p-4 text-center">
+                                <p className="text-sm text-gray-600 mb-2">
+                                    Upload supporting documents (medical certificates, technical issue reports, etc.)
+                                </p>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    PDF, JPG, PNG files accepted (Max 5MB each)
+                                </p>
+                                <input
+                                    type="file"
+                                    onChange={handleFileUpload}
+                                    multiple
+                                    className="hidden"
+                                    id="waiver-docs-upload"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                />
+                                <label
+                                    htmlFor="waiver-docs-upload"
+                                    className="inline-flex items-center px-3 py-1.5 bg-primary text-white rounded text-sm hover:bg-primary-dark cursor-pointer"
+                                >
+                                    <span>Choose Files</span>
+                                </label>
+                            </div>
+
+                            {supportingDocs.length > 0 && (
+                                <div className="mt-3 border rounded p-3">
+                                    <h4 className="font-medium text-gray-700 mb-2 text-sm">Files to be attached:</h4>
+                                    <div className="space-y-1">
+                                        {supportingDocs.map((file, index) => (
+                                            <div key={index} className="flex items-center justify-between p-1.5 bg-gray-50 rounded text-xs">
+                                                <div className="flex items-center truncate">
+                                                    <span className="ml-1 truncate">{file.name}</span>
+                                                    <span className="ml-2 text-gray-500">
+                                                        ({(file.size / 1024).toFixed(1)} KB)
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile(index)}
+                                                    className="text-red-500 hover:text-red-700 ml-2"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end space-x-3 pt-4">
+                            <button 
+                                onClick={() => setWaiverModalOpen(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={submitWaiverRequest}
+                                disabled={!waiverReason}
+                                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            >
+                                <CheckIcon />
+                                <span className="ml-2">Submit to Commission</span>
+                            </button>
+                        </div>
+
+                        <div className="text-xs text-gray-500 border-t pt-3">
+                            <p className="font-medium">Note:</p>
+                            <p>• This waiver request will be forwarded to the Commission for review</p>
+                            <p>• The Commission may approve, reject, or modify the request</p>
+                            <p>• You will be notified of the decision via email</p>
+                            <p>• During review, the penalty status will show as "Waiver Requested"</p>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-8">
                 <div>
@@ -145,32 +410,133 @@ const PaymentConsoleContent = ({ userRole }: { userRole: UserRole }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"> <DashboardCard title="Outstanding Dues" value={formatCurrency(totalOutstanding)} subtitle="Pending Collection" variant="danger" /> <DashboardCard title="Total Collected" value={formatCurrency(totalCollected)} subtitle="Recovered Fines" variant="success" /> <DashboardCard title="Active Cases" value={activeCasesCount.toString()} subtitle="Officials Fined" variant="warning" /> </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                <DashboardCard 
+                    title="Outstanding Dues" 
+                    value={formatCurrency(totalOutstanding)} 
+                    subtitle="Pending Collection" 
+                    variant="danger" 
+                />
+                <DashboardCard 
+                    title="Total Collected" 
+                    value={formatCurrency(totalCollected)} 
+                    subtitle="Recovered Fines" 
+                    variant="success" 
+                />
+                <DashboardCard 
+                    title="Active Cases" 
+                    value={activeCasesCount.toString()} 
+                    subtitle="Officials Fined" 
+                    variant="warning" 
+                />
+                <DashboardCard 
+                    title="Waiver Requests" 
+                    value={waiverRequestsCount.toString()} 
+                    subtitle="Pending Commission Review" 
+                    variant="info" 
+                />
+            </div>
 
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-4 border-b border-gray-200 flex justify-between"><input type="text" placeholder="Search..." className="border rounded p-2 w-64" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
+                <div className="p-4 border-b border-gray-200 flex flex-wrap justify-between items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <select 
+                            className="border rounded px-3 py-2 text-sm"
+                            value={filterStatus}
+                            onChange={e => setFilterStatus(e.target.value)}
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Waiver Requested">Waiver Requested</option>
+                        </select>
+                        <input 
+                            type="text" 
+                            placeholder="Search by name or ID..." 
+                            className="border rounded px-3 py-2 text-sm w-64" 
+                            value={searchQuery} 
+                            onChange={e => setSearchQuery(e.target.value)} 
+                        />
+                    </div>
+                </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-gray-100 border-b border-gray-200">
                             <tr>
-                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Official</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Violation Type</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Calculation</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Fine Amount</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary">Status</th><th className="py-3 px-4 font-semibold text-sm text-text-secondary text-right">Action</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Official</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Violation Type</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Calculation</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Fine Amount</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary">Status</th>
+                                <th className="py-3 px-4 font-semibold text-sm text-text-secondary text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredCases.map((item) => (
                                 <tr key={item.id} className="hover:bg-gray-50">
-                                    <td className="py-3 px-4"><div className="font-medium">{item.officialName}</div><div className="text-xs text-gray-500">{item.agency}</div></td>
-                                    <td className="py-3 px-4"><span className="px-2 py-1 rounded text-xs font-bold bg-red-50 text-red-600">{item.type}</span></td>
-                                    <td className="py-3 px-4 text-xs text-gray-600">{getCalculationDetails(item)}</td>
-                                    <td className="py-3 px-4 font-bold">{formatCurrency(item.fineAmount)}</td>
-                                    <td className="py-3 px-4"><span className={`px-2 py-1 rounded text-xs ${item.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{item.status}</span></td>
-                                    <td className="py-3 px-4 text-right space-x-2">
-                                        {item.status === 'Pending' && (
-                                            <>
-                                                <button onClick={() => sendReminder(item.officialName)} className="text-xs text-blue-600 hover:underline font-medium mr-3">Remind</button>
-                                                <button onClick={() => openPaymentModal(item)} className="px-3 py-1 bg-green-600 text-white text-xs rounded font-bold">Pay on Behalf</button>
-                                            </>
-                                        )}
+                                    <td className="py-3 px-4">
+                                        <div className="font-medium">{item.officialName}</div>
+                                        <div className="text-xs text-gray-500">{item.agency}</div>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                            item.type === 'Late Filing' ? 'bg-yellow-50 text-yellow-600' :
+                                            item.type === 'Non-Filing' ? 'bg-red-50 text-red-600' :
+                                            'bg-orange-50 text-orange-600'
+                                        }`}>
+                                            {item.type}
+                                        </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-xs text-gray-600">
+                                        {getCalculationDetails(item)}
+                                    </td>
+                                    <td className="py-3 px-4 font-bold">
+                                        {formatCurrency(item.fineAmount)}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                            item.status === 'Paid' ? 'bg-green-100 text-green-800' :
+                                            item.status === 'Waiver Requested' ? 'bg-purple-100 text-purple-800' :
+                                            'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                            {item.status === 'Waiver Requested' ? 'Waiver Requested' : item.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+                                        <div className="flex justify-end items-center space-x-2">
+                                            {item.status === 'Pending' && (
+                                                <>
+                                                    <button 
+                                                        onClick={() => sendReminder(item.officialName)} 
+                                                        className="text-xs text-blue-600 hover:underline font-medium"
+                                                    >
+                                                        Remind
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => openPaymentModal(item)} 
+                                                        className="px-3 py-1 bg-green-600 text-white text-xs rounded font-bold hover:bg-green-700"
+                                                    >
+                                                        Pay on Behalf
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => openWaiverModal(item)} 
+                                                        className="px-3 py-1 bg-purple-600 text-white text-xs rounded font-bold hover:bg-purple-700"
+                                                    >
+                                                        Request Waiver
+                                                    </button>
+                                                </>
+                                            )}
+                                            {item.status === 'Waiver Requested' && (
+                                                <span className="text-xs text-gray-500 italic">
+                                                    Awaiting Commission decision
+                                                </span>
+                                            )}
+                                            {item.status === 'Paid' && (
+                                                <span className="text-xs text-green-600 font-medium">
+                                                    Paid
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

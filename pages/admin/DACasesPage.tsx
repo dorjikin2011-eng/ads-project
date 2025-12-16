@@ -84,9 +84,21 @@ const DACasesPage = () => {
     const [selectedCase, setSelectedCase] = useState(daCases[0]);
     const [isReportModalOpen, setReportModalOpen] = useState(false);
     const [scheduleFilter, setScheduleFilter] = useState<'All' | 'Schedule I' | 'Schedule II'>('All');
+    const [forwardedCases, setForwardedCases] = useState<Set<string>>(new Set());
 
     const handleGenerateReport = () => {
         setReportModalOpen(true);
+    };
+
+    const handleForwardToCommission = (caseId: string) => {
+        // Add the case ID to the forwarded cases set
+        setForwardedCases(prev => new Set(prev).add(caseId));
+        // Here you would typically make an API call to forward the case
+        console.log(`Case ${caseId} forwarded to Commission`);
+    };
+
+    const isCaseForwarded = (caseId: string) => {
+        return forwardedCases.has(caseId);
     };
 
     const formatCurrency = (amount: number) => {
@@ -262,6 +274,8 @@ const DACasesPage = () => {
                     <div className="divide-y divide-gray-100">
                         {filteredCases.map((daCase) => {
                             const threshold = getThresholdStatus(daCase.disproportion, daCase.explainedWealth);
+                            const isForwarded = isCaseForwarded(daCase.id);
+                            
                             return (
                                 <div 
                                     key={daCase.id} 
@@ -288,6 +302,11 @@ const DACasesPage = () => {
                                             <span className={`px-2 py-1 text-xs font-bold rounded-full ${getThresholdBadgeClass(threshold.color)}`}>
                                                 {threshold.level.toUpperCase()}
                                             </span>
+                                            {isForwarded && (
+                                                <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700">
+                                                    FORWARDED
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="mt-3 flex justify-between items-end">
@@ -317,6 +336,7 @@ const DACasesPage = () => {
                         const thresholdBgClass = getThresholdBgClass(threshold.color);
                         const thresholdBorderClass = getThresholdBorderClass(threshold.color);
                         const thresholdTextClass = getThresholdTextClass(threshold.color);
+                        const isForwarded = isCaseForwarded(selectedCase.id);
                         
                         return (
                             <div className="p-6">
@@ -428,8 +448,16 @@ const DACasesPage = () => {
                                         <DocumentReportIcon />
                                         <span className="ml-2">Generate DA Report</span>
                                     </button>
-                                    <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                                        Forward to Investigation
+                                    <button 
+                                        onClick={() => handleForwardToCommission(selectedCase.id)}
+                                        disabled={isForwarded}
+                                        className={`w-full flex items-center justify-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium ${
+                                            isForwarded 
+                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {isForwarded ? 'Forwarded to Commission' : 'Forward to Commission'}
                                     </button>
                                 </div>
                             </div>
@@ -447,3 +475,12 @@ const DACasesPage = () => {
 };
 
 export default DACasesPage;
+
+
+
+
+
+
+
+
+

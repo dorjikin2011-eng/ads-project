@@ -1,4 +1,5 @@
 // components/AdminHeader.tsx
+
 import React, { useState, useRef, useEffect } from 'react';
 import BellIcon from './icons/BellIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -13,7 +14,10 @@ import BanknotesIcon from './icons/BanknotesIcon';
 import ShareIcon from './icons/ShareIcon';
 import ServerIcon from './icons/ServerIcon';
 import HistoryIcon from './icons/HistoryIcon';
-import WarningIcon from './icons/WarningIcon'; // ← ADDED
+import WarningIcon from './icons/WarningIcon';
+import GavelIcon from './icons/GavelIcon'; // ← ADDED
+import { UserRole } from '../types';
+
 
 interface AdminHeaderProps {
     activePage: string;
@@ -100,6 +104,14 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ activePage, setActivePage, on
                                    <NavLink icon={<ScaleIcon />} label="DA" page="da-cases" activePage={activePage} setActivePage={setActivePage} />
                                    <NavLink icon={<ShareIcon />} label="Sharing" page="info-sharing" activePage={activePage} setActivePage={setActivePage} />
                                    <NavLink icon={<ServerIcon />} label="APIs" page="api-mgmt" activePage={activePage} setActivePage={setActivePage} />
+                                   {/* ✅ COMMISSION TAB — CADA only */}
+                                   <NavLink 
+                                     icon={<GavelIcon />} 
+                                     label="Commission" 
+                                     page="commission" 
+                                     activePage={activePage} 
+                                     setActivePage={setActivePage} 
+                                   />
                                </>
                            )}
                            

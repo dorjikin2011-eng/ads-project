@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserRole } from '../../types';
 import UserGroupIcon from '../../components/icons/UserGroupIcon';
 import SearchIcon from '../../components/icons/SearchIcon';
@@ -33,7 +33,19 @@ interface Official {
   lastFilingDate?: string;
 }
 
-const initialOfficials: Official[] = [ 
+// Year Master List Interface
+interface YearMasterList {
+  year: number;
+  officials: Official[];
+  createdBy: string;
+  createdAt: string;
+  status: 'draft' | 'published' | 'archived';
+  isCurrent: boolean;
+  notes?: string;
+}
+
+// Initial officials data (for 2024)
+const initialOfficials2024: Official[] = [ 
   { 
     id: '11223344', 
     name: 'H.E. Lyonpo Dorji', 
@@ -170,6 +182,26 @@ const initialOfficials: Official[] = [
   }
 ];
 
+// Initial officials for 2023 (example) - FIXED with proper typing
+const initialOfficials2023: Official[] = [
+  { 
+    id: '11223344', 
+    name: 'H.E. Lyonpo Dorji', 
+    email: 'dorji@cabinet.gov.bt', 
+    designation: 'Deputy Minister',
+    agency: 'Cabinet', 
+    schedule: 'Schedule I', 
+    status: 'Active',
+    role: 'hoa', 
+    lastLogin: '2023-02-15',
+    declarationCount: 4,
+    lastDeclaration: '2023-01-10',
+    declarationStatus: 'On Time',
+    onWatchList: false,
+    declarationDueDate: '2023-03-31'
+  }
+];
+
 const initialRequests = [ 
   { id: 'REQ-ADM-01', type: 'Change Agency Admin', agency: 'Ministry of Education', nominee: 'Karma Tenzin (102030)', status: 'Pending', date: '2024-03-12' }, 
   { id: 'REQ-ADM-02', type: 'Add Sub-Admin', agency: 'Thimphu Thromde', nominee: 'Pema Lhamo (504030)', status: 'Approved', date: '2024-03-10' } 
@@ -177,28 +209,125 @@ const initialRequests = [
 
 interface UserManagementPageProps { 
   userRole: UserRole; 
-  onFileOnBehalf?: (officialName: string, officialId: string) => void; 
+  onFileOnBehalf?: (officialName: string, officialId: string) => void;
+  currentYear?: number;
 }
 
-const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFileOnBehalf }) => {
+// Helper function to ensure proper Official typing
+const createOfficial = (data: Partial<Official>): Official => {
+  return {
+    id: data.id || '',
+    name: data.name || '',
+    email: data.email || '',
+    designation: data.designation || '',
+    agency: data.agency || '',
+    schedule: data.schedule || 'Schedule II',
+    status: data.status || 'Active',
+    role: data.role,
+    lastLogin: data.lastLogin,
+    declarationCount: data.declarationCount || 0,
+    lastDeclaration: data.lastDeclaration,
+    declarationStatus: data.declarationStatus,
+    onWatchList: data.onWatchList || false,
+    monitoringNotes: data.monitoringNotes,
+    declarationDueDate: data.declarationDueDate,
+    lastFilingDate: data.lastFilingDate
+  };
+};
+
+const UserManagementPage: React.FC<UserManagementPageProps> = ({ 
+  userRole, 
+  onFileOnBehalf,
+  currentYear = new Date().getFullYear()
+}) => {
+    // State Management
     const [activeTab, setActiveTab] = useState<'Master List' | 'Admin Requests' | 'Watch List'>('Master List');
-    const [officials, setOfficials] = useState<Official[]>(initialOfficials);
+    const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+    const [yearMasterLists, setYearMasterLists] = useState<YearMasterList[]>([
+      {
+        year: 2024,
+        officials: initialOfficials2024,
+        createdBy: userRole === 'admin' ? 'CADA Admin' : 'ADA Admin',
+        createdAt: '2024-01-01',
+        status: 'published',
+        isCurrent: true,
+        notes: 'Active master list for 2024 declaration cycle'
+      },
+      {
+        year: 2023,
+        officials: initialOfficials2023,
+        createdBy: 'CADA Admin',
+        createdAt: '2023-01-01',
+        status: 'archived',
+        isCurrent: false,
+        notes: 'Archived 2023 master list'
+      }
+    ]);
+    
     const [adminRequests, setAdminRequests] = useState(initialRequests);
     const [searchQuery, setSearchQuery] = useState('');
     const [scheduleFilter, setScheduleFilter] = useState<'All' | 'Schedule I' | 'Schedule II'>('All');
     const [roleFilter, setRoleFilter] = useState<'All' | 'agency_admin' | 'hoa'>('All');
     const [declarationFilter, setDeclarationFilter] = useState<'All' | 'On Time' | 'Late' | 'Non-Declarant' | 'Incomplete'>('All');
+    
+    // Modal States
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [isRequestModalOpen, setRequestModalOpen] = useState(false);
     const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
     const [isWatchListNotesModalOpen, setWatchListNotesModalOpen] = useState(false);
+    const [isYearModalOpen, setYearModalOpen] = useState(false);
+    const [isExportModalOpen, setExportModalOpen] = useState(false);
+    
+    // Form States
     const [selectedOfficial, setSelectedOfficial] = useState<Official | null>(null);
     const [watchListNotes, setWatchListNotes] = useState('');
-    const [newUser, setNewUser] = useState({ id: '', name: '', email: '', designation: '', agency: '', schedule: 'Schedule II', role: 'user' });
-    const [newRequest, setNewRequest] = useState({ type: 'Change Agency Admin', nomineeId: '', nomineeName: '', reason: '' });
+    const [newUser, setNewUser] = useState({ 
+      id: '', 
+      name: '', 
+      email: '', 
+      designation: '', 
+      agency: '', 
+      schedule: 'Schedule II' as 'Schedule I' | 'Schedule II', 
+      role: 'user' 
+    });
+    const [newRequest, setNewRequest] = useState({ 
+      type: 'Change Agency Admin', 
+      nomineeId: '', 
+      nomineeName: '', 
+      reason: '' 
+    });
     const [registeredEmail, setRegisteredEmail] = useState('');
+    
+    // Year Management States
+    const [newYear, setNewYear] = useState<number>(currentYear + 1);
+    const [copyFromYear, setCopyFromYear] = useState<number>(currentYear);
+    const [exportYear, setExportYear] = useState<number>(selectedYear);
+    const [newYearNotes, setNewYearNotes] = useState('');
 
-    // Filter Logic
+    // Get current year's officials
+    const getCurrentOfficials = (): Official[] => {
+      const currentList = yearMasterLists.find(list => list.year === selectedYear);
+      return currentList ? currentList.officials : [];
+    };
+
+    // Update current year's officials in yearMasterLists
+    const updateCurrentOfficials = (updatedOfficials: Official[]) => {
+      setYearMasterLists(lists => lists.map(list => 
+        list.year === selectedYear 
+          ? { ...list, officials: updatedOfficials }
+          : list
+      ));
+    };
+
+    // Use local state for current officials (will update when year changes)
+    const [officials, setOfficials] = useState<Official[]>(getCurrentOfficials());
+
+    // Update officials when selectedYear changes
+    useEffect(() => {
+      setOfficials(getCurrentOfficials());
+    }, [selectedYear]);
+
+    // Filter Logic for current year
     const filteredOfficials = officials.filter(official => {
         if (userRole === 'agency_admin') { 
             if (official.agency !== 'Ministry of Finance') return false; 
@@ -217,95 +346,161 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
         );
     });
 
-    // Filter for Watch List
+    // Filter for Watch List (current year only)
     const watchListOfficials = officials.filter(official => official.onWatchList);
 
-    // Export to Excel function
-    const exportToExcel = (data: Official[], filename: string) => {
-        // In a real implementation, you would use a library like xlsx or generate CSV
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + ["ID,Name,Email,Designation,Agency,Schedule,Status,Declaration Status,Last Declaration,Declaration Count,Monitoring Notes"]
-            .concat(data.map(o => 
-                `"${o.id}","${o.name}","${o.email}","${o.designation}","${o.agency}","${o.schedule}","${o.status}","${o.declarationStatus || 'N/A'}","${o.lastDeclaration || 'N/A'}","${o.declarationCount || 0}","${o.monitoringNotes || ''}"`
-            ))
-            .join("\n");
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        alert(`${filename} exported successfully!`);
+    // Get available years
+    const availableYears = yearMasterLists.map(list => list.year).sort((a, b) => b - a);
+    
+    // Get current list status
+    const currentList = yearMasterLists.find(list => list.year === selectedYear);
+    const currentListStatus = currentList?.status || 'draft';
+
+    // ========== YEAR MANAGEMENT FUNCTIONS ==========
+    
+    // Create new year master list
+    const handleCreateNewYear = () => {
+      const sourceList = yearMasterLists.find(list => list.year === copyFromYear);
+      if (!sourceList) return;
+      
+      // Create new officials list with reset declaration data
+      const newOfficials: Official[] = sourceList.officials.map(official => 
+        createOfficial({
+          ...official,
+          declarationCount: 0,
+          lastDeclaration: undefined,
+          declarationStatus: 'Non-Declarant',
+          lastFilingDate: undefined,
+          declarationDueDate: `${newYear}-03-31`,
+          status: 'Active'
+        })
+      );
+      
+      const newMasterList: YearMasterList = {
+        year: newYear,
+        officials: newOfficials,
+        createdBy: userRole === 'admin' ? 'CADA Admin' : 'ADA Admin',
+        createdAt: new Date().toISOString().split('T')[0],
+        status: 'draft',
+        isCurrent: false,
+        notes: newYearNotes || `Master list for ${newYear} declaration cycle`
+      };
+      
+      // Update year master lists
+      setYearMasterLists(lists => 
+        lists.map(list => ({ ...list, isCurrent: false }))
+          .concat([newMasterList])
+      );
+      
+      setYearModalOpen(false);
+      setSelectedYear(newYear);
+      setNewYearNotes('');
+      alert(`New master list created for ${newYear}. You can now edit it.`);
+    };
+    
+    // Publish current year's list
+    const handlePublishMasterList = () => {
+      if (!window.confirm(`Publish ${selectedYear} master list? This will make it the active list for declarations.`)) {
+        return;
+      }
+      
+      setYearMasterLists(lists => 
+        lists.map(list => 
+          list.year === selectedYear 
+            ? { ...list, status: 'published', isCurrent: true }
+            : { ...list, isCurrent: false }
+        )
+      );
+      alert(`Master list for ${selectedYear} has been published and is now active.`);
+    };
+    
+    // Archive a year's list
+    const handleArchiveYear = (year: number) => {
+      if (!window.confirm(`Archive ${year} master list? Archived lists are read-only.`)) {
+        return;
+      }
+      
+      setYearMasterLists(lists => 
+        lists.map(list => 
+          list.year === year 
+            ? { ...list, status: 'archived', isCurrent: false }
+            : list
+        )
+      );
+      alert(`${year} master list has been archived.`);
+    };
+    
+    // Export year-specific master list
+    const exportYearMasterList = (year: number) => {
+      const list = yearMasterLists.find(l => l.year === year);
+      if (!list) return;
+      
+      const csvContent = "data:text/csv;charset=utf-8," 
+        + ["Year,ID,Name,Email,Designation,Agency,Schedule,Roles,Status,Declaration Status,Declaration Count,Last Declaration Date,On Watch List,Monitoring Notes,Declaration Due Date"]
+        .concat(list.officials.map(o => {
+          const escape = (str: string) => `"${str.replace(/"/g, '""')}"`;
+          return [
+            year,
+            o.id,
+            o.name,
+            o.email,
+            o.designation,
+            o.agency,
+            o.schedule,
+            o.role || 'Declarant',
+            o.status,
+            o.declarationStatus || 'Non-Declarant',
+            o.declarationCount || 0,
+            o.lastDeclaration || 'Never',
+            o.onWatchList ? 'Yes' : 'No',
+            o.monitoringNotes || '',
+            o.declarationDueDate || ''
+          ].map(cell => escape(String(cell))).join(",");
+        }))
+        .join("\n");
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `master_list_${year}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert(`Master list for ${year} exported successfully!`);
+    };
+    
+    // Export all years as separate files
+    const exportAllYears = () => {
+      if (!window.confirm("This will download multiple CSV files. Continue?")) {
+        return;
+      }
+      
+      yearMasterLists.forEach(list => {
+        exportYearMasterList(list.year);
+      });
+      
+      // Small delay between downloads
+      setTimeout(() => {
+        alert("All year master lists exported successfully!");
+      }, 1000);
     };
 
-    // View History Handler
-    const handleViewHistory = (officialId: string, officialName: string) => {
-        // Store data to pass to HistoryPage
-        const adminViewData = {
-            officialId,
-            officialName,
-            viewerRole: userRole,
-            timestamp: new Date().toISOString()
-        };
-        
-        sessionStorage.setItem('adminViewData', JSON.stringify(adminViewData));
-        
-        // Navigate to History page
-        window.location.href = `/history?officialId=${officialId}&viewAs=admin`;
-    };
+    // ========== USER MANAGEMENT FUNCTIONS ==========
 
-    // Watch List Handlers
-    const handleAddToWatchList = (official: Official) => {
-        setSelectedOfficial(official);
-        setWatchListNotes(official.monitoringNotes || '');
-        setWatchListNotesModalOpen(true);
-    };
-
-    const handleRemoveFromWatchList = (id: string) => {
-        if(confirm("Remove this official from Watch List?")) {
-            setOfficials(officials.map(off => 
-                off.id === id ? { ...off, onWatchList: false, monitoringNotes: '' } : off
-            ));
-        }
-    };
-
-    const handleSaveWatchListNotes = () => {
-        if (selectedOfficial) {
-            const isAddingToWatchList = !selectedOfficial.onWatchList;
-            setOfficials(officials.map(off => 
-                off.id === selectedOfficial.id ? { 
-                    ...off, 
-                    onWatchList: true, 
-                    monitoringNotes: watchListNotes 
-                } : off
-            ));
-            setWatchListNotesModalOpen(false);
-            setSelectedOfficial(null);
-            setWatchListNotes('');
-            
-            if (isAddingToWatchList) {
-                alert(`${selectedOfficial.name} has been added to Watch List with monitoring notes.`);
-            } else {
-                alert("Monitoring notes updated.");
-            }
-        }
-    };
-
-    // Handlers
     const handleAddUser = (e: React.FormEvent) => { 
         e.preventDefault(); 
-        let finalSchedule = newUser.schedule as 'Schedule I' | 'Schedule II'; 
+        let finalSchedule = newUser.schedule; 
         let finalAgency = newUser.agency; 
         let finalRole = newUser.role; 
+        
         if (userRole === 'agency_admin') { 
             finalSchedule = 'Schedule II'; 
             finalAgency = 'Ministry of Finance'; 
             finalRole = 'user'; 
         } 
-        const newOfficial: Official = { 
+        
+        const newOfficial: Official = createOfficial({
             id: newUser.id, 
             name: newUser.name, 
             email: newUser.email, 
@@ -315,9 +510,14 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
             status: 'Active', 
             role: finalRole as any, 
             declarationCount: 0,
-            declarationStatus: 'Non-Declarant'
-        }; 
-        setOfficials([...officials, newOfficial]); 
+            declarationStatus: 'Non-Declarant',
+            lastLogin: new Date().toISOString().split('T')[0]
+        });
+        
+        const updatedOfficials = [...officials, newOfficial];
+        setOfficials(updatedOfficials);
+        updateCurrentOfficials(updatedOfficials);
+        
         setAddModalOpen(false); 
         setRegisteredEmail(newUser.email); 
         setSuccessModalOpen(true); 
@@ -349,13 +549,97 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
     };
     
     const toggleStatus = (id: string) => { 
-        setOfficials(officials.map(off => off.id === id ? { ...off, status: off.status === 'Active' ? 'Inactive' : 'Active' } : off)); 
+        const updatedOfficials = officials.map(off => {
+            if (off.id === id) {
+                return createOfficial({
+                    ...off,
+                    status: off.status === 'Active' ? 'Inactive' : 'Active'
+                });
+            }
+            return off;
+        });
+        setOfficials(updatedOfficials);
+        updateCurrentOfficials(updatedOfficials);
     };
     
     const promoteToAdmin = (id: string) => { 
         if(confirm("Are you sure you want to promote this user to ADA?")) { 
-            setOfficials(officials.map(off => off.id === id ? { ...off, role: 'agency_admin' } : off)); 
+            const updatedOfficials = officials.map(off => {
+                if (off.id === id) {
+                    return createOfficial({
+                        ...off,
+                        role: 'agency_admin'
+                    });
+                }
+                return off;
+            });
+            setOfficials(updatedOfficials);
+            updateCurrentOfficials(updatedOfficials);
         } 
+    };
+
+    // View History Handler
+    const handleViewHistory = (officialId: string, officialName: string) => {
+        const adminViewData = {
+            officialId,
+            officialName,
+            viewerRole: userRole,
+            timestamp: new Date().toISOString()
+        };
+        
+        sessionStorage.setItem('adminViewData', JSON.stringify(adminViewData));
+        window.location.href = `/history?officialId=${officialId}&viewAs=admin&year=${selectedYear}`;
+    };
+
+    // Watch List Handlers
+    const handleAddToWatchList = (official: Official) => {
+        setSelectedOfficial(official);
+        setWatchListNotes(official.monitoringNotes || '');
+        setWatchListNotesModalOpen(true);
+    };
+
+    const handleRemoveFromWatchList = (id: string) => {
+        if(confirm("Remove this official from Watch List?")) {
+            const updatedOfficials = officials.map(off => {
+                if (off.id === id) {
+                    return createOfficial({
+                        ...off,
+                        onWatchList: false,
+                        monitoringNotes: ''
+                    });
+                }
+                return off;
+            });
+            setOfficials(updatedOfficials);
+            updateCurrentOfficials(updatedOfficials);
+        }
+    };
+
+    const handleSaveWatchListNotes = () => {
+        if (selectedOfficial) {
+            const isAddingToWatchList = !selectedOfficial.onWatchList;
+            const updatedOfficials = officials.map(off => {
+                if (off.id === selectedOfficial.id) {
+                    return createOfficial({
+                        ...off,
+                        onWatchList: true,
+                        monitoringNotes: watchListNotes
+                    });
+                }
+                return off;
+            });
+            setOfficials(updatedOfficials);
+            updateCurrentOfficials(updatedOfficials);
+            
+            setWatchListNotesModalOpen(false);
+            setSelectedOfficial(null);
+            setWatchListNotes('');
+            
+            alert(isAddingToWatchList 
+                ? `${selectedOfficial.name} has been added to Watch List.`
+                : "Monitoring notes updated."
+            );
+        }
     };
 
     // Get declaration status badge color
@@ -404,7 +688,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                                 <h4 className="font-bold text-text-main">{selectedOfficial.name}</h4>
                                 <p className="text-sm text-text-secondary">ID: {selectedOfficial.id} | {selectedOfficial.designation}</p>
-                                <p className="text-sm text-text-secondary">{selectedOfficial.agency}</p>
+                                <p className="text-sm text-text-secondary">{selectedOfficial.agency} • Year: {selectedYear}</p>
                                 <div className="mt-2">
                                     <span className={`px-2 py-1 rounded-full text-xs border ${getDeclarationStatusColor(selectedOfficial.declarationStatus)}`}>
                                         {selectedOfficial.declarationStatus || 'Unknown'}
@@ -447,9 +731,183 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                 </div>
             </Modal>
 
+            {/* Create New Year Modal */}
+            <Modal isOpen={isYearModalOpen} onClose={() => setYearModalOpen(false)} title="Create New Year Master List">
+                <div className="p-4 space-y-4">
+                    <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                        <p className="text-sm text-blue-800">
+                            Create a new master list for the upcoming declaration year. You can copy from an existing year's list.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            New Year
+                        </label>
+                        <input
+                            type="number"
+                            value={newYear}
+                            onChange={(e) => setNewYear(parseInt(e.target.value) || currentYear + 1)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            min={currentYear + 1}
+                            max={currentYear + 5}
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Copy Officials From Year
+                        </label>
+                        <select
+                            value={copyFromYear}
+                            onChange={(e) => setCopyFromYear(parseInt(e.target.value))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                            {availableYears.map(year => {
+                                const list = yearMasterLists.find(l => l.year === year);
+                                return (
+                                    <option key={year} value={year}>
+                                        {year} ({list?.officials.length || 0} officials • {list?.status})
+                                    </option>
+                                );
+                            })}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Will copy {yearMasterLists.find(l => l.year === copyFromYear)?.officials.length || 0} officials. 
+                            Declaration history will be reset for the new year.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Notes (Optional)
+                        </label>
+                        <textarea
+                            value={newYearNotes}
+                            onChange={(e) => setNewYearNotes(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            rows={2}
+                            placeholder="E.g., '2025 master list with updated agency assignments'"
+                        />
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Officials to Copy:</span>
+                            <span className="font-bold">{yearMasterLists.find(l => l.year === copyFromYear)?.officials.length || 0}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-4">
+                            Note: Declaration counts and status will be reset. New officials can be added later.
+                        </div>
+                        
+                        <div className="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setYearModalOpen(false);
+                                    setNewYearNotes('');
+                                }}
+                                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md border"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateNewYear}
+                                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark font-bold"
+                            >
+                                Create {newYear} Master List
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Export Modal */}
+            <Modal isOpen={isExportModalOpen} onClose={() => setExportModalOpen(false)} title="Export Master Lists">
+                <div className="p-4">
+                    <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-3">Select which year's master list to export:</p>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {availableYears.map(year => {
+                                const list = yearMasterLists.find(l => l.year === year);
+                                return (
+                                    <div key={year} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="radio"
+                                                id={`year-${year}`}
+                                                name="exportYear"
+                                                checked={exportYear === year}
+                                                onChange={() => setExportYear(year)}
+                                                className="h-4 w-4 text-primary"
+                                            />
+                                            <div>
+                                                <label htmlFor={`year-${year}`} className="font-medium text-gray-900 cursor-pointer">
+                                                    {year} Master List
+                                                </label>
+                                                <div className="text-xs text-gray-500">
+                                                    {list?.officials.length} officials • {list?.status} • Created: {list?.createdAt}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {list?.isCurrent && (
+                                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded">
+                                                    Current
+                                                </span>
+                                            )}
+                                            <span className={`px-2 py-1 text-xs rounded ${
+                                                list?.status === 'published' ? 'bg-green-100 text-green-800' :
+                                                list?.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {list?.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                        <div className="flex justify-between">
+                            <button
+                                onClick={exportAllYears}
+                                className="px-4 py-2 text-primary border border-primary rounded-md hover:bg-blue-50"
+                            >
+                                Export All Years
+                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setExportModalOpen(false)}
+                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md border"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        exportYearMasterList(exportYear);
+                                        setExportModalOpen(false);
+                                    }}
+                                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark font-bold"
+                                >
+                                    Export Selected Year
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
             {/* Add User Modal */}
             <Modal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} title="Register New User">
                 <form onSubmit={handleAddUser} className="space-y-4">
+                    <div className="mb-3 p-3 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-sm text-blue-800 font-medium">
+                            Adding to <span className="font-bold">{selectedYear}</span> Master List
+                        </p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">CID / Official ID</label>
@@ -481,7 +939,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Schedule Type</label>
                                     <select className="mt-1 w-full px-3 py-2 border rounded-md" 
-                                        value={newUser.schedule} onChange={e => setNewUser({...newUser, schedule: e.target.value})}>
+                                        value={newUser.schedule} onChange={e => setNewUser({...newUser, schedule: e.target.value as 'Schedule I' | 'Schedule II'})}>
                                         <option value="Schedule I">Schedule I</option>
                                         <option value="Schedule II">Schedule II</option>
                                     </select>
@@ -552,6 +1010,8 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                 </form>
             </Modal>
 
+            {/* ========== MAIN UI ========== */}
+            
             {/* Header & Tabs */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-6">
                 <div>
@@ -578,10 +1038,138 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                     </button>
                     <button 
                         onClick={() => setActiveTab('Admin Requests')} 
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'Admin Requests' ? 'bg-primary text-white' : 'bg-white text-gray-600 border border-gray-300'}`}
+                        className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'Admin Requests' ? 'bg-primary text-white' : 'bg-white text-gray-600 border border-gray-300'}`}
                     >
                         Admin Change Requests
                     </button>
+                </div>
+            </div>
+
+            {/* Year Management Header */}
+            <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Select Year Master List
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium min-w-[180px]"
+                                >
+                                    {availableYears.map(year => (
+                                        <option key={year} value={year}>
+                                            {year} Master List
+                                        </option>
+                                    ))}
+                                </select>
+                                
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                    currentListStatus === 'published' 
+                                        ? 'bg-green-100 text-green-800 border border-green-200'
+                                        : currentListStatus === 'draft'
+                                        ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                        : 'bg-gray-100 text-gray-800 border border-gray-200'
+                                }`}>
+                                    {currentListStatus.toUpperCase()}
+                                </span>
+                                
+                                {currentList?.isCurrent && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
+                                        ACTIVE YEAR
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600">
+                            <div className="font-medium">{officials.length} officials in {selectedYear} list</div>
+                            {currentList?.notes && (
+                                <div className="text-xs text-gray-500 mt-1">{currentList.notes}</div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className="flex gap-2 flex-wrap">
+                        {/* Export Current Year Button */}
+                        <button
+                            onClick={() => exportYearMasterList(selectedYear)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm flex items-center gap-2 text-sm"
+                        >
+                            <ExportIcon className="w-4 h-4" />
+                            Export {selectedYear}
+                        </button>
+                        
+                        {/* Export All Years Button */}
+                        <button
+                            onClick={() => setExportModalOpen(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-sm flex items-center gap-2 text-sm"
+                        >
+                            <ExportIcon className="w-4 h-4" />
+                            Export All Years
+                        </button>
+                        
+                        {/* Create New Year Button (Admin only) */}
+                        {(userRole === 'admin' || userRole === 'agency_admin') && (
+                            <button
+                                onClick={() => setYearModalOpen(true)}
+                                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 shadow-sm flex items-center gap-2 text-sm"
+                            >
+                                <UserAddIcon className="w-4 h-4" />
+                                New Year List
+                            </button>
+                        )}
+                        
+                        {/* Publish Button for draft lists */}
+                        {currentListStatus === 'draft' && (userRole === 'admin' || userRole === 'agency_admin') && (
+                            <button
+                                onClick={handlePublishMasterList}
+                                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark shadow-sm text-sm"
+                            >
+                                Publish {selectedYear}
+                            </button>
+                        )}
+                        
+                        {/* Archive Button for published lists */}
+                        {currentListStatus === 'published' && userRole === 'admin' && (
+                            <button
+                                onClick={() => handleArchiveYear(selectedYear)}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 shadow-sm text-sm"
+                            >
+                                Archive Year
+                            </button>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Year Stats */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-primary">{officials.filter(o => o.status === 'Active').length}</div>
+                            <div className="text-xs text-gray-600">Active Officials</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">
+                                {officials.filter(o => o.declarationStatus === 'On Time').length}
+                            </div>
+                            <div className="text-xs text-gray-600">On Time Filers</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-yellow-600">
+                                {officials.filter(o => o.declarationStatus === 'Late' || o.declarationStatus === 'Incomplete').length}
+                            </div>
+                            <div className="text-xs text-gray-600">Late/Incomplete</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-red-600">
+                                {officials.filter(o => o.declarationStatus === 'Non-Declarant').length}
+                            </div>
+                            <div className="text-xs text-gray-600">Non-Declarants</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -659,12 +1247,22 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                                 className="flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark shadow-sm"
                             >
                                 <UserAddIcon />
-                                <span className="ml-2">Add User</span>
+                                <span className="ml-2">Add User to {selectedYear}</span>
                             </button>
                         </div>
                     </div>
 
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 bg-gray-50">
+                            <div className="flex justify-between items-center">
+                                <h3 className="font-bold text-text-main">
+                                    {selectedYear} Master List • {filteredOfficials.length} officials
+                                </h3>
+                                <div className="text-sm text-gray-600">
+                                    Showing {filteredOfficials.length} of {officials.length} officials
+                                </div>
+                            </div>
+                        </div>
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
@@ -840,11 +1438,11 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                                 ))} 
                             </div>
                             <button 
-                                onClick={() => exportToExcel(watchListOfficials, 'watch_list')}
+                                onClick={() => exportYearMasterList(selectedYear)}
                                 className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm"
                             >
                                 <ExportIcon />
-                                <span className="ml-2">Export Watch List</span>
+                                <span className="ml-2">Export {selectedYear} Watch List</span>
                             </button>
                         </div>
                     </div>
@@ -857,7 +1455,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ userRole, onFil
                                         <div className="flex items-center gap-3">
                                             <WatchIcon className="w-6 h-6 text-amber-600" />
                                             <div>
-                                                <h3 className="font-bold text-amber-900">Proactive Monitoring Watch List</h3>
+                                                <h3 className="font-bold text-amber-900">{selectedYear} Proactive Monitoring Watch List</h3>
                                                 <p className="text-sm text-amber-700">
                                                     {watchListOfficials.length} officials being monitored for compliance
                                                 </p>

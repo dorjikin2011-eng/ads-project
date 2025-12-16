@@ -1,7 +1,7 @@
 // pages/AdminDashboardPage.tsx
 
-import React, { useState, useEffect } from 'react';
-import SearchIcon from '../components/icons/ServerIcon';
+import React, { useState } from 'react';
+import SearchIcon from '../components/icons/SearchIcon'; // Fixed import
 import AdminHeader from '../components/AdminHeader';
 import DashboardCard from '../components/DashboardCard';
 import AdminVerificationPage from './admin/VerificationPage';
@@ -16,8 +16,9 @@ import AuditLogPage from './admin/AuditLogPage';
 import FileNewPage from './FileNewPage';
 import AdaProfilePage from './AdaProfilePage';
 import CadaProfilePage from './CadaProfilePage';
-import CommissionDecisionsPage from './admin/CommissionDecisionsPage'; // ← CORRECT PATH
-import { UserRole, DeclarationStatus, Declaration } from '../types'; // adjust the path
+import CommissionDecisionsPage from './admin/CommissionDecisionsPage';
+import CoIAlertsPage from './admin/CoIAlertsPage'; // Added import
+import { UserRole } from '../types'; // adjust the path
 
 // Mock data
 const allSubmissions = [
@@ -234,7 +235,8 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onLogout, userR
       case 'file-on-behalf': return <FileNewPage isProcessingForAdmin={true} targetOfficialName={filingTarget?.name} targetOfficialId={filingTarget?.id} />;
       case 'ada-profile': return <AdaProfilePage profilePicture={profilePicture} setProfilePicture={setProfilePicture} />;
       case 'cada-profile': return <CadaProfilePage profilePicture={profilePicture} setProfilePicture={setProfilePicture} />;
-      case 'commission': return <CommissionDecisionsPage />; // ← CORRECTED: uses './admin/CommissionDecisionsPage'
+      case 'commission': return <CommissionDecisionsPage />;
+      case 'coi': return <CoIAlertsPage userRole={userRole} />; // Added CoI Alerts page
       default: return <OverviewContent onViewDetails={handleViewDetails} userRole={userRole} />;
     }
   };

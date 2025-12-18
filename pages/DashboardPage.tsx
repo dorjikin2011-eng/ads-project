@@ -42,6 +42,59 @@ interface Penalty {
   paymentDate?: string;
 }
 
+// Profile Update Modal Component
+interface ProfileUpdateModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onGoToProfile: () => void;
+}
+
+const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onClose, onGoToProfile }) => {
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Profile Update Required"
+    >
+      <div className="space-y-4">
+        <div className="flex items-start">
+          <div className="flex-shrink-0 mt-1">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="text-blue-600 font-bold text-lg">ⓘ</span>
+            </div>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-lg font-semibold text-gray-900">Profile Update Required</h3>
+          </div>
+        </div>
+        
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+          <p className="text-gray-700 mb-2">Please update your profile</p>
+          <p className="text-gray-600 text-sm">
+            Click on your profile picture at the top right corner and select "Your Profile" 
+            from the dropdown menu to review and update your information.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-sm transition-colors"
+          >
+            Later
+          </button>
+          <button
+            onClick={onGoToProfile}
+            className="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium text-sm transition-colors shadow-sm"
+          >
+            Go to Profile
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 // Chatbot quick questions
 const quickQuestions = [
   "What assets need to be declared?",
@@ -77,7 +130,12 @@ const mockPenalties: Penalty[] = [
   { id: 'PEN-003', year: '2024', reason: 'Late Submission (1 month)', amount: 1000, status: 'Pending', dueDate: '2024-03-31' },
 ];
 
-const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => void }) => {
+// Interface for DashboardContent props
+interface DashboardContentProps {
+  setActivePage: (page: string) => void;
+}
+
+const DashboardContent = ({ setActivePage }: DashboardContentProps) => {
     const isCleared = mockDeclarations[0].type === 'Vacation of Office' && mockDeclarations[0].status === DeclarationStatus.APPROVED;
     
     const [isAmendmentModalOpen, setAmendmentModalOpen] = useState(false);
@@ -109,6 +167,27 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
         setActivePage('history');
         // In a real app, you might navigate to a specific penalties section
         alert('Navigating to penalties section in History page');
+    };
+
+    const handlePayNow = (penaltyId?: string) => {
+        // Store the payment action in sessionStorage
+        sessionStorage.setItem('paymentAction', 'make-payment');
+        
+        // Store penalty ID if provided
+        if (penaltyId) {
+            sessionStorage.setItem('selectedPenaltyId', penaltyId);
+        }
+        
+        // Set active page to payment
+        setActivePage('payment');
+    };
+
+    const handleViewPaymentHistory = () => {
+        // Store the payment action in sessionStorage
+        sessionStorage.setItem('paymentAction', 'payment-history');
+        
+        // Set active page to payment
+        setActivePage('payment');
     };
 
     return (
@@ -274,7 +353,7 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
                         Action Required
                       </span>
                       <button 
-                        onClick={handleViewPenalties}
+                        onClick={() => handlePayNow()}
                         className="text-xs font-medium text-red-600 hover:text-red-800 underline"
                       >
                         Pay Now
@@ -305,7 +384,7 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
                         <div className="text-right">
                           <p className="text-lg font-bold text-red-700">Nu. {penalty.amount.toLocaleString()}</p>
                           <button 
-                            onClick={() => alert(`Proceed to payment for ${penalty.id}`)}
+                            onClick={() => handlePayNow(penalty.id)}
                             className="text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
                           >
                             Pay Now
@@ -329,7 +408,7 @@ const DashboardContent = ({ setActivePage }: { setActivePage: (page: string) => 
                   )}
                 </div>
                 <button 
-                  onClick={() => setActivePage('payment')}
+                  onClick={handleViewPaymentHistory}
                   className="text-sm font-medium text-primary hover:text-primary-dark"
                 >
                   View Payment History →
@@ -571,6 +650,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwi
     viewerRole: UserRole;
   } | null>(null);
   
+  // Profile Update Modal state
+  const [showProfileUpdateModal, setShowProfileUpdateModal] = useState(false);
+  
   // Check for admin history view on component mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -603,9 +685,43 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwi
     }
   }, []);
 
+  // Show profile update modal when dashboard loads (for declarants)
+  useEffect(() => {
+    // Only show for declarants (not admins) and not in admin history view
+    if (userRole !== 'admin' && !isAdminHistoryView && activePage === 'dashboard') {
+      // Check if user has recently dismissed the modal
+      const hasDismissed = sessionStorage.getItem('profileUpdateModalDismissed');
+      const hasClickedGoToProfile = sessionStorage.getItem('profileUpdateClickedGoToProfile');
+      
+      // Only show if not dismissed in this session and not already clicked "Go to Profile"
+      if (!hasDismissed && !hasClickedGoToProfile) {
+        // Add a small delay for better UX
+        const timer = setTimeout(() => {
+          setShowProfileUpdateModal(true);
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [userRole, isAdminHistoryView, activePage]);
+
+  const handleGoToProfile = () => {
+    // Mark that user clicked "Go to Profile" to prevent showing again
+    sessionStorage.setItem('profileUpdateClickedGoToProfile', 'true');
+    setShowProfileUpdateModal(false);
+    setActivePage('profile');
+  };
+
+  const handleCloseProfileModal = () => {
+    // Mark as dismissed for this session
+    sessionStorage.setItem('profileUpdateModalDismissed', 'true');
+    setShowProfileUpdateModal(false);
+  };
+
   const renderContent = () => {
     switch(activePage) {
-      case 'dashboard': return <DashboardContent setActivePage={setActivePage} />;
+      case 'dashboard': 
+        return <DashboardContent setActivePage={setActivePage} />;
       case 'filenew': return <FileNewPage />;
       case 'history': 
         if (isAdminHistoryView && adminHistoryData) {
@@ -675,7 +791,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwi
       case 'payment': return <PaymentPage />;
       case 'whistleblowing': return <WhistleblowingPage />;
       case 'contact': return <ContactPage />;
-      default: return <DashboardContent setActivePage={setActivePage} />;
+      default: 
+        return <DashboardContent setActivePage={setActivePage} />;
     }
   }
 
@@ -695,6 +812,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwi
         </div>
       </main>
       
+      {/* Profile Update Modal - Only show for declarants */}
+      {userRole !== 'admin' && !isAdminHistoryView && (
+        <ProfileUpdateModal
+          isOpen={showProfileUpdateModal}
+          onClose={handleCloseProfileModal}
+          onGoToProfile={handleGoToProfile}
+        />
+      )}
+      
       {/* Chatbot - Only show for declarants (not for admin view) */}
       {userRole !== 'admin' && !isAdminHistoryView && (
         <AssetDeclarationChatbot />
@@ -704,3 +830,4 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout, userRole, onSwi
 };
 
 export default DashboardPage;
+

@@ -12,6 +12,7 @@ interface Penalty {
   paymentDate?: string;
   transactionId?: string;
   paymentMethod?: string;
+  daysOverdue?: number; // Added for calculation details
 }
 
 interface PaymentHistory {
@@ -39,7 +40,8 @@ const PaymentPage: React.FC = () => {
       dueDate: '2024-06-30',
       status: 'pending',
       referenceNumber: 'PEN-2024-001',
-      type: 'Late Filing'
+      type: 'Late Filing',
+      daysOverdue: 15 // 15 × 125 = 1875
     },
     {
       id: 'PEN-2024-002',
@@ -48,7 +50,8 @@ const PaymentPage: React.FC = () => {
       dueDate: '2024-05-15',
       status: 'overdue',
       referenceNumber: 'PEN-2024-002',
-      type: 'Non-Filing'
+      type: 'Non-Filing',
+      // daysOverdue not needed for non-filing (fixed 365 days)
     },
     {
       id: 'PEN-2023-001',
@@ -58,6 +61,7 @@ const PaymentPage: React.FC = () => {
       status: 'paid',
       referenceNumber: 'PEN-2023-001',
       type: 'Late Filing',
+      daysOverdue: 24, // 24 × 125 = 3000
       paymentDate: '2023-12-15',
       transactionId: 'TX-2023-001',
       paymentMethod: 'BIRMS'
@@ -144,6 +148,66 @@ const PaymentPage: React.FC = () => {
     return `BIRMS-${timestamp}`;
   };
 
+  // Penalty Calculation Logic - Show how amount was arrived at
+  const getPenaltyCalculationDetails = (penalty: Penalty) => {
+    const wage = 125; // Daily wage rate
+    
+    if (penalty.type === 'Late Filing') {
+      // For Late Filing, calculate based on days overdue
+      const daysOverdue = penalty.daysOverdue || Math.round(penalty.amount / wage);
+      return {
+        title: 'Late Filing Penalty Calculation',
+        description: 'You missed the May 31st deadline for annual declaration.',
+        formula: `${daysOverdue} days overdue × Nu. ${wage} (daily wage rate)`,
+        calculation: `${daysOverdue} × ${wage} = Nu. ${penalty.amount}`,
+        details: [
+          `Deadline: May 31st`,
+          `Days overdue: ${daysOverdue} days`,
+          `Daily wage rate: Nu. ${wage}`,
+          `Total penalty: Nu. ${penalty.amount}`
+        ]
+      };
+    } 
+    
+    if (penalty.type === 'Non-Filing') {
+      return {
+        title: 'Non-Filing Penalty Calculation',
+        description: 'You did not file your declaration by June 30th, which is considered non-declaration.',
+        formula: `365 days × Nu. ${wage} (full year penalty)`,
+        calculation: `365 × ${wage} = Nu. ${penalty.amount}`,
+        details: [
+          `Initial deadline: May 31st`,
+          `Non-filing threshold: June 30th`,
+          `Full year penalty: 365 days`,
+          `Daily wage rate: Nu. ${wage}`,
+          `Total penalty: Nu. ${penalty.amount}`
+        ]
+      };
+    }
+    
+    if (penalty.type === 'Incomplete Filing') {
+      return {
+        title: 'Incomplete Filing Penalty Calculation',
+        description: 'Your declaration submission was incomplete or had errors.',
+        formula: `30 days × Nu. ${wage} (standard penalty)`,
+        calculation: `30 × ${wage} = Nu. ${penalty.amount}`,
+        details: [
+          `Standard penalty: 30 days`,
+          `Daily wage rate: Nu. ${wage}`,
+          `Total penalty: Nu. ${penalty.amount}`
+        ]
+      };
+    }
+    
+    return {
+      title: 'Penalty Calculation',
+      description: 'Administrative penalty for non-compliance.',
+      formula: 'Fixed penalty amount',
+      calculation: `Nu. ${penalty.amount}`,
+      details: [`Total penalty: Nu. ${penalty.amount}`]
+    };
+  };
+
   // Handle payment submission
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,7 +262,7 @@ const PaymentPage: React.FC = () => {
         const updatedPenalties = penalties.map(p => 
           p.id === selectedPenaltyData.id ? { 
             ...p, 
-            status: 'paid' as const, // Fix: Use 'paid' as const to match the type
+            status: 'paid' as const,
             paymentDate: new Date().toISOString().split('T')[0],
             transactionId: reference,
             paymentMethod: 'BIRMS'
@@ -298,6 +362,12 @@ const PaymentPage: React.FC = () => {
     </svg>
   );
 
+  const CalculatorIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  );
+
   // Render Make Payment Tab
   const renderMakePaymentTab = () => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -316,40 +386,78 @@ const PaymentPage: React.FC = () => {
             <div className="space-y-4">
               {penalties
                 .filter(p => p.status === 'pending' || p.status === 'overdue')
-                .map(penalty => (
-                <div 
-                  key={penalty.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                    selectedPenalty === penalty.id 
-                      ? 'border-primary bg-blue-50' 
-                      : 'border-gray-200 hover:border-primary hover:bg-gray-50'
-                  }`}
-                  onClick={() => setSelectedPenalty(penalty.id)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-text-main">{penalty.description}</h3>
-                      <div className="flex items-center gap-3 mt-2">
-                        {getStatusBadge(penalty.status)}
-                        <span className="text-sm text-text-secondary">
-                          Due: {formatDate(penalty.dueDate)}
-                        </span>
-                        <span className="text-sm text-text-secondary">
-                          Ref: {penalty.referenceNumber}
-                        </span>
+                .map(penalty => {
+                  const calculationDetails = getPenaltyCalculationDetails(penalty);
+                  return (
+                    <div 
+                      key={penalty.id}
+                      className={`border rounded-lg cursor-pointer transition-all ${
+                        selectedPenalty === penalty.id 
+                          ? 'border-primary bg-blue-50' 
+                          : 'border-gray-200 hover:border-primary hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedPenalty(penalty.id)}
+                    >
+                      <div className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium text-text-main">{penalty.description}</h3>
+                            <div className="flex items-center gap-3 mt-2">
+                              {getStatusBadge(penalty.status)}
+                              <span className="text-sm text-text-secondary">
+                                Due: {formatDate(penalty.dueDate)}
+                              </span>
+                              <span className="text-sm text-text-secondary">
+                                Ref: {penalty.referenceNumber}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-text-main">
+                              {formatCurrency(penalty.amount)}
+                            </div>
+                            <div className="text-xs text-text-secondary mt-1">
+                              {penalty.type}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Penalty Calculation Details (shown when selected) */}
+                        {selectedPenalty === penalty.id && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex items-start">
+                              <CalculatorIcon className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-blue-800 text-sm mb-1">
+                                  {calculationDetails.title}
+                                </h4>
+                                <p className="text-blue-700 text-xs mb-2">
+                                  {calculationDetails.description}
+                                </p>
+                                <div className="bg-white p-3 rounded border border-blue-100">
+                                  <div className="font-mono text-blue-900 text-sm">
+                                    {calculationDetails.formula}
+                                  </div>
+                                  <div className="font-bold text-blue-900 text-lg mt-2">
+                                    = {calculationDetails.calculation}
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-xs text-blue-700">
+                                  <p className="font-medium mb-1">Calculation breakdown:</p>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {calculationDetails.details.map((detail, index) => (
+                                      <li key={index}>{detail}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-text-main">
-                        {formatCurrency(penalty.amount)}
-                      </div>
-                      <div className="text-xs text-text-secondary mt-1">
-                        {penalty.type}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           )}
 
@@ -433,6 +541,31 @@ const PaymentPage: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Penalty Calculation Details */}
+              {selectedPenaltyData && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <CalculatorIcon className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-bold text-blue-800 text-sm">
+                        Penalty Calculation
+                      </h4>
+                      <div className="mt-2 bg-white p-3 rounded border border-blue-100">
+                        <div className="font-mono text-blue-900 text-sm text-center">
+                          {getPenaltyCalculationDetails(selectedPenaltyData).formula}
+                        </div>
+                        <div className="font-bold text-blue-900 text-lg text-center mt-2">
+                          = {getPenaltyCalculationDetails(selectedPenaltyData).calculation}
+                        </div>
+                      </div>
+                      <p className="text-blue-700 text-xs mt-2">
+                        {getPenaltyCalculationDetails(selectedPenaltyData).description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Payment Amount */}
               <div>
@@ -652,30 +785,37 @@ const PaymentPage: React.FC = () => {
           {penalties
             .filter(p => p.status === 'paid')
             .slice(0, 4)
-            .map(penalty => (
-              <div key={penalty.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-text-main">{penalty.type}</h4>
-                    <p className="text-sm text-text-secondary mt-1">{penalty.description}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                        Paid
-                      </span>
-                      <span className="text-xs text-text-secondary">
-                        {penalty.paymentDate && formatDate(penalty.paymentDate)}
-                      </span>
+            .map(penalty => {
+              const calculationDetails = getPenaltyCalculationDetails(penalty);
+              return (
+                <div key={penalty.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium text-text-main">{penalty.type}</h4>
+                      <p className="text-sm text-text-secondary mt-1">{penalty.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                          Paid
+                        </span>
+                        <span className="text-xs text-text-secondary">
+                          {penalty.paymentDate && formatDate(penalty.paymentDate)}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-600">
+                        <span className="font-medium">Calculation: </span>
+                        {calculationDetails.formula}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-text-main">{formatCurrency(penalty.amount)}</div>
-                    <div className="text-xs text-text-secondary mt-1">
-                      {penalty.paymentMethod}
+                    <div className="text-right">
+                      <div className="font-bold text-text-main">{formatCurrency(penalty.amount)}</div>
+                      <div className="text-xs text-text-secondary mt-1">
+                        {penalty.paymentMethod}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       </div>
     </div>
